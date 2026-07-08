@@ -1,0 +1,42 @@
+export const servers = [
+  {
+    host: "prod-db-02",
+    ip: "10.2.1.12",
+    os: "Ubuntu 22.04",
+    cpu: 91,
+    mem: 88,
+    state: "crit",
+  },
+  {
+    host: "prod-api-01",
+    ip: "10.2.1.21",
+    os: "Ubuntu 22.04",
+    cpu: 64,
+    mem: 71,
+    state: "warn",
+  },
+  {
+    host: "prod-api-02",
+    ip: "10.2.1.22",
+    os: "Ubuntu 22.04",
+    cpu: 41,
+    mem: 55,
+    state: "ok",
+  },
+  {
+    host: "log-store-1",
+    ip: "10.2.2.31",
+    os: "RHEL 9",
+    cpu: 33,
+    mem: 62,
+    state: "warn",
+  },
+  {
+    host: "edge-proxy-1",
+    ip: "10.2.0.5",
+    os: "Debian 12",
+    cpu: 22,
+    mem: 38,
+    state: "ok",
+  },
+];

@@ -1,0 +1,15 @@
+export const T = {
+  bg: "#0A0E17",
+  panel: "#10151F",
+  panelAlt: "#141B28",
+  border: "#1E2634",
+  text: "#E6EAF2",
+  muted: "#8B94A7",
+  faint: "#5B6478",
+  accent: "#22D3EE",
+  ok: "#34D399",
+  warn: "#FBBF24",
+  crit: "#F87171",
+  mono: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+  sans: "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif",
+};
