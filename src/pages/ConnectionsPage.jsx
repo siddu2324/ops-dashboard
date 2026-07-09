@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import Card from "../components/common/Card";
+import { logAction } from "../services/auditService"; // ✅ Added import
 
 export default function ConnectionsPage() {
   const [url, setUrl] = useState("");
@@ -22,6 +23,8 @@ export default function ConnectionsPage() {
     // Simulate API call
     try {
       await new Promise((resolve) => setTimeout(resolve, 1200));
+      // ✅ Log backend connection
+      logAction("backend_connected", { url: url.trim() });
       toast.success("Backend connected successfully!");
       setUrl("");
       setApiKey("");

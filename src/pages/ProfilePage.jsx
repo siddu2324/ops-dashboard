@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import Card from "../components/common/Card";
 import { getRole } from "../services/authService";
+import { logAction } from "../services/auditService"; // ✅ Added import
 
 export default function ProfilePage() {
   const role = getRole();
@@ -15,6 +16,8 @@ export default function ProfilePage() {
     setIsLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
+      // ✅ Log profile update
+      logAction("profile_updated", { displayName, email });
       toast.success("Settings saved successfully!");
       setPassword("");
     } catch (error) {

@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import Card from "../components/common/Card";
 import { useUsers } from "../hooks/useUsers";
 import { isAdmin } from "../services/authService";
+import { logAction } from "../services/auditService"; // ✅ Added import
 
 export default function UsersPage() {
   const { users, addUser, updateUser, deleteUser } = useUsers();
@@ -24,10 +25,23 @@ export default function UsersPage() {
       return;
     }
     if (editingUser) {
+      // Update existing user
       updateUser(editingUser.id, formData);
+      // ✅ Log user update
+      logAction("user_updated", { 
+        id: editingUser.id, 
+        changes: { ...formData } 
+      });
       toast.success("User updated");
     } else {
+      // Add new user
       addUser(formData);
+      // ✅ Log user creation
+      logAction("user_created", { 
+        username: formData.username, 
+        email: formData.email, 
+        role: formData.role 
+      });
       toast.success("User added");
     }
     setShowModal(false);
@@ -43,6 +57,8 @@ export default function UsersPage() {
   const handleDelete = (id) => {
     if (window.confirm("Are you sure?")) {
       deleteUser(id);
+      // ✅ Log user deletion
+      logAction("user_deleted", { id });
       toast.success("User deleted");
     }
   };

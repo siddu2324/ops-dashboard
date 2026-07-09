@@ -38,34 +38,19 @@ export const NAV = [
     id: "operations",
     label: "Operations",
     icon: Siren,
-    children: [
-      "Alerting",
-      "Incidents",
-      "RCA",
-      "Automation",
-    ],
+    children: ["Alerting", "Incidents", "RCA", "Automation"],
   },
   {
     id: "ai",
     label: "AI",
     icon: Bot,
-    children: [
-      "AI Assistant",
-      "Root Cause",
-      "Recommendations",
-      "Capacity Planning",
-    ],
+    children: ["AI Assistant", "Root Cause", "Recommendations", "Capacity Planning"],
   },
   {
     id: "reports",
     label: "Reports",
     icon: BarChart3,
-    children: [
-      "Executive Dashboard",
-      "SLA",
-      "Availability",
-      "Capacity",
-    ],
+    children: ["Executive Dashboard", "SLA", "Availability", "Capacity"],
   },
   {
     id: "administration",
@@ -77,15 +62,13 @@ export const NAV = [
       "Service Accounts",
       "Datasources",
       "Connections",
+      "Audit Log",   // ✅ Added
     ],
   },
   {
     id: "user",
     label: "User",
     icon: UserCog,
-    children: [
-      "Profile",
-      "Preferences",
-    ],
+    children: ["Profile", "Preferences"],
   },
 ];

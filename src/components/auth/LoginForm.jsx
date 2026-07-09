@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { login } from "../../services/authService";
 import LoadingSpinner from "../common/LoadingSpinner";
+import { logAction } from "../../services/auditService"; // ✅ Added import
 
 // Demo credentials
 const USERS = {
@@ -40,6 +41,8 @@ export default function LoginForm() {
       const user = USERS[trimmedUsername];
       if (user && user.password === trimmedPassword) {
         login(user.role); // store role
+        // ✅ Log successful login
+        logAction("login", { username: trimmedUsername, role: user.role });
         toast.success(`Welcome back, ${trimmedUsername}! 🚀`);
         navigate("/");
       } else {
@@ -55,7 +58,7 @@ export default function LoginForm() {
   return (
     <div className="w-[380px] bg-[var(--color-panel)] p-8 rounded-xl border border-[var(--color-border)] shadow-2xl">
       <h2 className="text-[var(--color-text)] text-2xl font-bold text-center mb-6">
-        OpsDeck Login
+        AiOps360 Login
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">

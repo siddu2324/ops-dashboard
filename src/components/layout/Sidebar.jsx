@@ -1,14 +1,8 @@
-import {
-  ChevronDown,
-  ChevronRight,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plus,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react";
 import { isAdmin } from "../../services/authService";
 
-// Admin-only group IDs (these will be completely hidden for users)
-const ADMIN_ONLY_GROUPS = ["administration", "reports"]; // feel free to add more
+// Admin‑only groups – still hidden for regular users
+const ADMIN_ONLY_GROUPS = ["administration", "reports"];
 
 export default function Sidebar({
   navItems,
@@ -20,22 +14,18 @@ export default function Sidebar({
   onCollapsedToggle,
   addMenuItem,
   removeMenuItem,
-  onItemClick, // 👈 new prop
+  onItemClick,
 }) {
   const admin = isAdmin();
 
-  // Filter nav items: if not admin, hide admin-only groups
+  // Filter out admin‑only groups for non‑admins
   const filteredNavItems = admin
     ? navItems
     : navItems.filter((item) => !ADMIN_ONLY_GROUPS.includes(item.id));
 
   const go = (item, groupId) => {
     onNavigate(item, groupId);
-
-    // Close mobile sidebar if callback exists
-    if (onItemClick) {
-      onItemClick();
-    }
+    if (onItemClick) onItemClick();
   };
 
   const toggle = (id) => onToggle(id);
@@ -45,20 +35,16 @@ export default function Sidebar({
       className="flex flex-col shrink-0 bg-[var(--color-panel)] border-r border-[var(--color-border)] transition-[width] duration-150"
       style={{ width: collapsed ? 64 : 236 }}
     >
-      {/* Logo */}
-      <div className="flex items-center gap-2 px-4 h-14 border-b border-[var(--color-border)]">
-        <div className="w-6.5 h-6.5 rounded-lg bg-[var(--color-accent)] grid place-items-center text-[#06222A] font-extrabold">
-          O
-        </div>
-
-        {!collapsed && (
-          <span className="text-[var(--color-text)] font-bold">
-            OpsDeck
-          </span>
-        )}
+      {/* ---- Logo only – bigger and centered ---- */}
+      <div className="flex items-center justify-center px-4 h-14 border-b border-[var(--color-border)]">
+        <img
+          src="/logo.png"
+          alt="AiOps360"
+          className="h-10 w-auto"  // increased from h-7 to h-10
+        />
       </div>
 
-      {/* Navigation */}
+      {/* ---- Navigation (unchanged) ---- */}
       <nav className="flex-1 overflow-y-auto py-2">
         {filteredNavItems.map((n) => {
           const isGroup = !!n.children;
@@ -75,7 +61,7 @@ export default function Sidebar({
                   border-l-2
                   ${(!isGroup && active === n.label) || groupActive ? "border-[var(--color-accent)]" : "border-transparent"}
                   text-[${groupActive || active === n.label ? "var(--color-text)" : "var(--color-muted)"}]
-                  hover:bg-[var(--color-panel-alt)] cursor-pointer`}
+                  hover:text-[var(--color-text)] cursor-pointer`}
               >
                 {typeof n.icon === "function" && <n.icon size={17} />}
 
@@ -83,8 +69,8 @@ export default function Sidebar({
                   <>
                     <span className="flex-1 text-left">{n.label}</span>
 
-                    {/* Only show add button if admin */}
-                    {admin && isGroup && (
+                    {/* Plus button – visible to everyone */}
+                    {isGroup && (
                       <Plus
                         size={14}
                         onClick={(e) => {
@@ -95,11 +81,7 @@ export default function Sidebar({
                     )}
 
                     {isGroup &&
-                      (open ? (
-                        <ChevronDown size={14} />
-                      ) : (
-                        <ChevronRight size={14} />
-                      ))}
+                      (open ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
                   </>
                 )}
               </button>
@@ -107,35 +89,26 @@ export default function Sidebar({
               {isGroup && open && !collapsed && (
                 <div>
                   {n.children.map((c) => (
-                    <div
-                      key={c}
-                      className="flex items-center justify-between pr-3.5"
-                    >
+                    <div key={c} className="flex items-center justify-between pr-3.5">
                       <button
                         onClick={() => go(c, n.id)}
                         className={`flex-1 text-left py-1.5 pl-10 pr-2
-                          ${
-                            active === c
-                              ? "bg-[rgba(34,211,238,0.06)] text-[var(--color-accent)]"
-                              : "text-[var(--color-faint)]"
-                          }
-                          hover:bg-[var(--color-panel-alt)] cursor-pointer`}
+                          ${active === c ? "text-[var(--color-accent)]" : "text-[var(--color-faint)]"}
+                          hover:text-[var(--color-text)] cursor-pointer`}
                       >
                         {c}
                       </button>
 
-                      {/* Only show remove button if admin */}
-                      {admin && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeMenuItem(n.id, c);
-                          }}
-                          className="bg-transparent border-none text-red-400 cursor-pointer opacity-0 hover:opacity-100 transition-opacity text-sm p-1"
-                        >
-                          ✕
-                        </button>
-                      )}
+                      {/* Remove button – visible to everyone */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeMenuItem(n.id, c);
+                        }}
+                        className="bg-transparent border-none text-red-400 cursor-pointer opacity-0 hover:opacity-100 transition-opacity text-sm p-1"
+                      >
+                        ✕
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -145,16 +118,12 @@ export default function Sidebar({
         })}
       </nav>
 
-      {/* Collapse toggle */}
+      {/* Collapse toggle (unchanged) */}
       <button
         onClick={() => onCollapsedToggle(!collapsed)}
-        className="h-11 bg-transparent border-none border-t border-[var(--color-border)] text-[var(--color-faint)] cursor-pointer flex items-center justify-center"
+        className="h-11 bg-transparent border-none border-t border-[var(--color-border)] text-[var(--color-faint)] cursor-pointer flex items-center justify-center hover:text-[var(--color-text)] transition"
       >
-        {collapsed ? (
-          <PanelLeftOpen size={17} />
-        ) : (
-          <PanelLeftClose size={17} />
-        )}
+        {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
       </button>
     </aside>
   );

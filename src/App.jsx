@@ -8,7 +8,10 @@ import Header from "./components/layout/Header";
 import LoginPage from "./pages/auth/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import LoadingSpinner from "./components/common/LoadingSpinner";
+import PlaceholderPage from "./pages/PlaceholderPage";
 import { isAuthenticated } from "./services/authService";
+import { WebSocketProvider } from "./context/WebSocketContext";
+import { logAction } from "./services/auditService";
 
 // ---- Lazy load pages ----
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -25,6 +28,117 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PreferencesPage = lazy(() => import("./pages/PreferencesPage"));
 const IncidentsPage = lazy(() => import("./pages/IncidentsPage"));
 const RCAPage = lazy(() => import("./pages/RCAPage"));
+const AuditLogPage = lazy(() => import("./pages/AuditLogPage")); // ✅ Lazy load AuditLog
+
+// ---- Placeholder data for pages that have no dedicated component ----
+const PLACEHOLDER_DATA = {
+  // Infrastructure
+  Kubernetes: {
+    title: "Kubernetes",
+    description: "Everything running under your control. No kubernetes configured yet.",
+    actionText: "Set up Kubernetes",
+  },
+  Docker: {
+    title: "Docker",
+    description: "Manage your containers. No Docker hosts registered.",
+    actionText: "Add Docker host",
+  },
+  VMware: {
+    title: "VMware",
+    description: "Virtual machines under your control. No vCenter connected.",
+    actionText: "Connect vCenter",
+  },
+  Cloud: {
+    title: "Cloud",
+    description: "Your cloud infrastructure. No cloud accounts linked.",
+    actionText: "Link cloud account",
+  },
+  // Observability
+  Prometheus: {
+    title: "Prometheus",
+    description: "Monitor your metrics. No Prometheus instances configured.",
+    actionText: "Add Prometheus",
+  },
+  Loki: {
+    title: "Loki",
+    description: "Aggregate your logs. No Loki data sources added.",
+    actionText: "Add Loki source",
+  },
+  Tempo: {
+    title: "Tempo",
+    description: "Distributed tracing. No Tempo backend connected.",
+    actionText: "Connect Tempo",
+  },
+  Mimir: {
+    title: "Mimir",
+    description: "Scalable metrics storage. No Mimir cluster configured.",
+    actionText: "Configure Mimir",
+  },
+  Zabbix: {
+    title: "Zabbix",
+    description: "Enterprise monitoring. No Zabbix server linked.",
+    actionText: "Link Zabbix",
+  },
+  // Operations
+  Automation: {
+    title: "Automation",
+    description: "Automate your workflows. No automation jobs defined.",
+    actionText: "Define job",
+  },
+  // AI
+  "AI Assistant": {
+    title: "AI Assistant",
+    description: "Get intelligent recommendations. No queries yet.",
+    actionText: "Ask a question",
+  },
+  "Root Cause": {
+    title: "Root Cause",
+    description: "AI-powered root cause analysis. No data available.",
+    actionText: "Analyze now",
+  },
+  Recommendations: {
+    title: "Recommendations",
+    description: "Proactive recommendations for your infrastructure.",
+    actionText: "Generate recommendations",
+  },
+  "Capacity Planning": {
+    title: "Capacity Planning",
+    description: "Plan your resource usage. No predictions available.",
+    actionText: "Run forecast",
+  },
+  // Reports
+  "Executive Dashboard": {
+    title: "Executive Dashboard",
+    description: "High-level overview. No data aggregated yet.",
+    actionText: "Generate report",
+  },
+  SLA: {
+    title: "SLA",
+    description: "Track service level agreements. No SLA data found.",
+    actionText: "Configure SLA",
+  },
+  Availability: {
+    title: "Availability",
+    description: "Uptime and availability metrics. No data available.",
+    actionText: "Set up monitoring",
+  },
+  Capacity: {
+    title: "Capacity",
+    description: "Capacity planning insights. No data to display.",
+    actionText: "Analyze capacity",
+  },
+  // Administration
+  "Service Accounts": {
+    title: "Service Accounts",
+    description: "Manage service accounts. No accounts created.",
+    actionText: "Create service account",
+  },
+  Datasources: {
+    title: "Datasources",
+    description: "Connect your data sources. No datasources configured.",
+    actionText: "Add datasource",
+  },
+};
 
 // ---- Map page names to components ----
 const PAGES = {
@@ -41,6 +155,7 @@ const PAGES = {
   Connections: ConnectionsPage,
   Profile: ProfilePage,
   Preferences: PreferencesPage,
+  "Audit Log": AuditLogPage, // ✅ Added mapping
 };
 
 // ---- Fallback UI for ErrorBoundary ----
@@ -73,7 +188,7 @@ function DashboardLayout() {
   });
 
   // Nav items with versioning
-  const NAV_VERSION = "1.0";
+  const NAV_VERSION = "1.1";
   const [navItems, setNavItems] = useState(() => {
     const saved = localStorage.getItem("navItems");
     const savedVersion = localStorage.getItem("navItemsVersion");
@@ -97,7 +212,7 @@ function DashboardLayout() {
     localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
   }, [collapsed]);
 
-  // ---- Mobile sidebar state ----
+  // Mobile sidebar state
   const [mobileOpen, setMobileOpen] = useState(false);
   const toggleMobile = () => setMobileOpen(!mobileOpen);
 
@@ -120,6 +235,7 @@ function DashboardLayout() {
     );
     setNavItems(updated);
     localStorage.setItem("navItems", JSON.stringify(updated));
+    logAction("sidebar_item_added", { groupId, name });
     toast.success(`Added "${name}"`);
   };
 
@@ -132,6 +248,7 @@ function DashboardLayout() {
     );
     setNavItems(updated);
     localStorage.setItem("navItems", JSON.stringify(updated));
+    logAction("sidebar_item_removed", { groupId, child });
     toast.error(`Removed "${child}"`);
   };
 
@@ -140,7 +257,18 @@ function DashboardLayout() {
 
   const section =
     navItems.find((n) => n.children?.includes(active))?.label || "Home";
-  const Page = PAGES[active] || GenericPage;
+
+  // Determine which component to render
+  const placeholder = PLACEHOLDER_DATA[active];
+  const PageComponent = placeholder
+    ? PlaceholderPage
+    : PAGES[active] || GenericPage;
+
+  // For placeholder pages, we pass the title, description, actionText
+  // For normal pages, we pass name, section, go
+  const pageProps = placeholder
+    ? { ...placeholder }
+    : { name: active, section, go };
 
   return (
     <div className="flex h-screen w-full bg-[var(--color-bg)] font-sans">
@@ -162,7 +290,7 @@ function DashboardLayout() {
           onToggle={toggle}
           onNavigate={go}
           onCollapsedToggle={setCollapsed}
-          onItemClick={toggleMobile}   // <-- close mobile on navigation
+          onItemClick={toggleMobile}
         />
       </div>
 
@@ -179,7 +307,7 @@ function DashboardLayout() {
           active={active}
           section={section}
           onNavigate={go}
-          onToggleSidebar={toggleMobile}   // <-- hamburger toggle
+          onToggleSidebar={toggleMobile}
         />
 
         <main className="flex-1 overflow-y-auto p-5">
@@ -197,7 +325,7 @@ function DashboardLayout() {
               {active === "Home" ? (
                 <HomePage go={go} />
               ) : (
-                <Page name={active} section={section} go={go} />
+                <PageComponent {...pageProps} />
               )}
             </Suspense>
           </ErrorBoundary>
@@ -221,7 +349,7 @@ function PublicRoute() {
 // ---- Main App ----
 export default function App() {
   return (
-    <>
+    <WebSocketProvider>
       <Toaster
         position="bottom-right"
         toastOptions={{
@@ -238,6 +366,6 @@ export default function App() {
         <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </>
+    </WebSocketProvider>
   );
 }

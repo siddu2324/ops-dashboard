@@ -10,6 +10,8 @@ import {
   Menu,
 } from "lucide-react";
 import { logout, getRole } from "../../services/authService";
+import { useWebSocket } from "../../context/WebSocketContext";
+import { logAction } from "../../services/auditService"; // ✅ Added import
 
 export default function Header({
   active,
@@ -20,8 +22,11 @@ export default function Header({
   const navigate = useNavigate();
   const role = getRole();
   const [showDropdown, setShowDropdown] = useState(false);
+  const { connectionStatus } = useWebSocket();
 
   const handleLogout = () => {
+    // ✅ Log logout action before clearing session
+    logAction("logout", { user: getRole() });
     logout();
     navigate("/login");
   };
@@ -63,6 +68,20 @@ export default function Header({
       {/* Status Badge */}
       <span className="font-mono text-xs text-[var(--color-warn)] border border-[var(--color-border)] rounded-full px-2.5 py-1">
         PROD · 2 degraded
+      </span>
+
+      {/* WebSocket Connection Status Indicator */}
+      <span className="flex items-center gap-1.5 font-mono text-xs border border-[var(--color-border)] rounded-full px-2.5 py-1">
+        <span
+          className={`w-2 h-2 rounded-full inline-block ${
+            connectionStatus === "connected"
+              ? "bg-[var(--color-ok)]"
+              : connectionStatus === "connecting"
+              ? "bg-[var(--color-warn)]"
+              : "bg-[var(--color-crit)]"
+          }`}
+        />
+        {connectionStatus}
       </span>
 
       {/* Notifications */}
@@ -113,7 +132,6 @@ export default function Header({
               <button
                 onClick={() => {
                   setShowDropdown(false);
-
                   if (onNavigate) {
                     onNavigate("Profile", "user");
                   }

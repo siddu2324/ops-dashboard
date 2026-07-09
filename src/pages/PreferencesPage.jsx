@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import Card from "../components/common/Card";
+import { logAction } from "../services/auditService"; // ✅ Added import
 
 // Load preferences from localStorage, or use defaults
 const getDefaultPrefs = () => ({
@@ -25,6 +26,9 @@ export default function PreferencesPage() {
       if (key === "theme") {
         applyTheme(value);
       }
+
+      // ✅ Log preference change
+      logAction("preference_changed", { key, value });
 
       toast.success(`${key.replace(/([A-Z])/g, " $1").trim()} updated`);
       setIsLoading(false);
@@ -133,4 +137,4 @@ export default function PreferencesPage() {
       </Card>
     </div>
   );
-}   
+}

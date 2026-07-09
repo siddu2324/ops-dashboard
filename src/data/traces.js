@@ -1,30 +1,33 @@
-export const traces = [
-  {
-    id: "a81f…c2",
-    op: "POST /checkout",
-    dur: "1.84s",
-    spans: 42,
-    status: "crit",
-  },
-  {
-    id: "77b0…9e",
-    op: "GET /catalog",
-    dur: "212ms",
-    spans: 11,
-    status: "ok",
-  },
-  {
-    id: "c4d2…10",
-    op: "POST /payments/charge",
-    dur: "980ms",
-    spans: 27,
-    status: "warn",
-  },
-  {
-    id: "e9aa…f4",
-    op: "GET /health",
-    dur: "8ms",
-    spans: 2,
-    status: "ok",
-  },
-];
+// src/data/traces.js
+const services = ["api-gateway", "auth-service", "order-service", "payment-service", "notification-service"];
+const spanNames = ["GET /users", "POST /order", "PUT /cart", "DELETE /item", "SELECT * FROM orders", "INSERT INTO logs"];
+const statuses = ["success", "error", "success", "success", "error"];
+
+const generateSpan = () => ({
+  name: spanNames[Math.floor(Math.random() * spanNames.length)],
+  duration: Math.floor(10 + Math.random() * 500), // ms
+  status: statuses[Math.floor(Math.random() * statuses.length)] === "error" ? "error" : "success",
+});
+
+const generateTrace = (id) => {
+  const service = services[Math.floor(Math.random() * services.length)];
+  const duration = Math.floor(100 + Math.random() * 2000);
+  const status = Math.random() > 0.85 ? "error" : "success";
+  const spans = Array.from({ length: 2 + Math.floor(Math.random() * 4) }, () => generateSpan());
+  const timestamp = new Date(Date.now() - Math.random() * 3600000).toISOString();
+  return {
+    id: `trace-${id}`,
+    service,
+    duration,
+    status,
+    spans,
+    timestamp,
+  };
+};
+
+export const initialTraces = Array.from({ length: 50 }, (_, i) => generateTrace(i + 1));
+
+export const generateNewTrace = () => {
+  const id = Date.now();
+  return generateTrace(id);
+};
