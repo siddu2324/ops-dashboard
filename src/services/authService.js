@@ -1,11 +1,21 @@
-export function login() {
-  sessionStorage.setItem("isLoggedIn", "true");
-}
+export const login = (role) => {
+  localStorage.setItem("auth", "true");
+  localStorage.setItem("role", role);
+};
 
-export function logout() {
-  sessionStorage.removeItem("isLoggedIn");
-}
+export const logout = () => {
+  localStorage.removeItem("auth");
+  localStorage.removeItem("role");
+};
 
-export function isAuthenticated() {
-  return sessionStorage.getItem("isLoggedIn") === "true";
-}
+export const isAuthenticated = () => {
+  return localStorage.getItem("auth") === "true";
+};
+
+export const getRole = () => {
+  return localStorage.getItem("role") || "user"; // default to user
+};
+
+export const isAdmin = () => {
+  return getRole() === "admin";
+};

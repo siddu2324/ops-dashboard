@@ -1,1 +1,68 @@
 @import "tailwindcss";
+
+@theme {
+  /* Colours – exactly matching your theme.js */
+  --color-bg: #0A0E17;
+  --color-panel: #10151F;
+  --color-panel-alt: #141B28;
+  --color-border: #1E2634;
+  --color-text: #E6EAF2;
+  --color-muted: #8B94A7;
+  --color-faint: #5B6478;
+  --color-accent: #22D3EE;
+  --color-ok: #34D399;
+  --color-warn: #FBBF24;
+  --color-crit: #F87171;
+
+  /* Fonts */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Light mode styles – applied when .light is on html */
+.light {
+  --color-bg: #f3f4f6;
+  --color-panel: #ffffff;
+  --color-panel-alt: #f9fafb;
+  --color-border: #e5e7eb;
+  --color-text: #1f2937;
+  --color-muted: #6b7280;
+  --color-faint: #9ca3af;
+  --color-accent: #3b82f6;
+
+  /* Status colors */
+  --color-ok: #10b981;
+  --color-warn: #f59e0b;
+  --color-crit: #ef4444;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.15s ease;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+  }
+
+  /* Optional: improve scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-panel);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 8px;
+  }
+}

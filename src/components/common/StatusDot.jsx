@@ -1,16 +1,11 @@
-import React from "react";
-import { Circle } from "lucide-react";
-import { T } from "../../constants/theme";
-
 const sevColor = (s) =>
-  s === "crit" ? T.crit : s === "warn" ? T.warn : T.ok;
+  s === "crit" ? "var(--color-crit)" : s === "warn" ? "var(--color-warn)" : "var(--color-ok)";
 
 export default function StatusDot({ state }) {
+  const color = sevColor(state);
   return (
-    <Circle
-      size={8}
-      fill={sevColor(state)}
-      color={sevColor(state)}
-    />
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+      <circle cx="4" cy="4" r="4" fill={color} />
+    </svg>
   );
 }

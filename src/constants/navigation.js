@@ -7,10 +7,15 @@ import {
   Bot,
   BarChart3,
   Settings,
+  UserCog,
 } from "lucide-react";
 
 export const NAV = [
-  { id: "home", label: "Home", icon: Home },
+  {
+    id: "home",
+    label: "Home",
+    icon: Home,
+  },
   {
     id: "monitoring",
     label: "Monitoring",
@@ -33,7 +38,12 @@ export const NAV = [
     id: "operations",
     label: "Operations",
     icon: Siren,
-    children: ["Alerting", "Incidents", "RCA", "Automation"],
+    children: [
+      "Alerting",
+      "Incidents",
+      "RCA",
+      "Automation",
+    ],
   },
   {
     id: "ai",
@@ -67,6 +77,15 @@ export const NAV = [
       "Service Accounts",
       "Datasources",
       "Connections",
+    ],
+  },
+  {
+    id: "user",
+    label: "User",
+    icon: UserCog,
+    children: [
+      "Profile",
+      "Preferences",
     ],
   },
 ];

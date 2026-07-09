@@ -1,141 +1,142 @@
-import React from "react";
 import {
   ChevronDown,
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  Plus,
 } from "lucide-react";
-import { T } from "../../constants/theme";
-import { NAV } from "../../constants/navigation";
+import { isAdmin } from "../../services/authService";
+
+// Admin-only group IDs (these will be completely hidden for users)
+const ADMIN_ONLY_GROUPS = ["administration", "reports"]; // feel free to add more
 
 export default function Sidebar({
+  navItems,
   active,
   collapsed,
   openGroups,
   onToggle,
   onNavigate,
   onCollapsedToggle,
+  addMenuItem,
+  removeMenuItem,
+  onItemClick, // 👈 new prop
 }) {
+  const admin = isAdmin();
+
+  // Filter nav items: if not admin, hide admin-only groups
+  const filteredNavItems = admin
+    ? navItems
+    : navItems.filter((item) => !ADMIN_ONLY_GROUPS.includes(item.id));
+
   const go = (item, groupId) => {
     onNavigate(item, groupId);
+
+    // Close mobile sidebar if callback exists
+    if (onItemClick) {
+      onItemClick();
+    }
   };
+
   const toggle = (id) => onToggle(id);
 
   return (
     <aside
-      className="flex flex-col shrink-0"
-      style={{
-        width: collapsed ? 64 : 236,
-        borderRight: `1px solid ${T.border}`,
-        background: T.panel,
-        transition: "width 160ms ease",
-      }}
+      className="flex flex-col shrink-0 bg-[var(--color-panel)] border-r border-[var(--color-border)] transition-[width] duration-150"
+      style={{ width: collapsed ? 64 : 236 }}
     >
-      <div
-        className="flex items-center gap-2 px-4"
-        style={{ height: 56, borderBottom: `1px solid ${T.border}` }}
-      >
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: 7,
-            background: T.accent,
-            display: "grid",
-            placeItems: "center",
-            color: "#06222A",
-            fontWeight: 800,
-            fontSize: 13,
-            fontFamily: T.mono,
-          }}
-        >
+      {/* Logo */}
+      <div className="flex items-center gap-2 px-4 h-14 border-b border-[var(--color-border)]">
+        <div className="w-6.5 h-6.5 rounded-lg bg-[var(--color-accent)] grid place-items-center text-[#06222A] font-extrabold">
           O
         </div>
+
         {!collapsed && (
-          <span
-            style={{
-              color: T.text,
-              fontWeight: 700,
-              fontSize: 15,
-              letterSpacing: "-0.01em",
-            }}
-          >
+          <span className="text-[var(--color-text)] font-bold">
             OpsDeck
           </span>
         )}
       </div>
 
-      <nav
-        className="flex-1 overflow-y-auto py-2"
-        style={{ scrollbarWidth: "thin" }}
-      >
-        {NAV.map((n) => {
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-2">
+        {filteredNavItems.map((n) => {
           const isGroup = !!n.children;
           const open = !!openGroups[n.id];
           const groupActive = isGroup && n.children.includes(active);
+
           return (
             <div key={n.id}>
               <button
                 onClick={() => (isGroup ? toggle(n.id) : go(n.label))}
-                title={collapsed ? n.label : undefined}
-                className="flex items-center w-full"
-                style={{
-                  gap: 10,
-                  padding: collapsed ? "10px 0" : "9px 14px",
-                  justifyContent: collapsed ? "center" : "flex-start",
-                  background:
-                    !isGroup && active === n.label
-                      ? T.panelAlt
-                      : "transparent",
-                  borderLeft: `2px solid ${
-                    (!isGroup && active === n.label) || groupActive
-                      ? T.accent
-                      : "transparent"
-                  }`,
-                  color:
-                    groupActive || active === n.label ? T.text : T.muted,
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 13.5,
-                  fontWeight: 500,
-                }}
+                className={`flex items-center w-full gap-2.5 transition-colors
+                  ${collapsed ? "justify-center py-2.5 px-0" : "py-2 px-3.5 justify-start"}
+                  ${(!isGroup && active === n.label) || groupActive ? "bg-[var(--color-panel-alt)]" : ""}
+                  border-l-2
+                  ${(!isGroup && active === n.label) || groupActive ? "border-[var(--color-accent)]" : "border-transparent"}
+                  text-[${groupActive || active === n.label ? "var(--color-text)" : "var(--color-muted)"}]
+                  hover:bg-[var(--color-panel-alt)] cursor-pointer`}
               >
-                <n.icon size={17} />
+                {typeof n.icon === "function" && <n.icon size={17} />}
+
                 {!collapsed && (
-                  <span style={{ flex: 1, textAlign: "left" }}>
-                    {n.label}
-                  </span>
-                )}
-                {!collapsed && isGroup && (
-                  open ? (
-                    <ChevronDown size={14} />
-                  ) : (
-                    <ChevronRight size={14} />
-                  )
+                  <>
+                    <span className="flex-1 text-left">{n.label}</span>
+
+                    {/* Only show add button if admin */}
+                    {admin && isGroup && (
+                      <Plus
+                        size={14}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addMenuItem(n.id);
+                        }}
+                      />
+                    )}
+
+                    {isGroup &&
+                      (open ? (
+                        <ChevronDown size={14} />
+                      ) : (
+                        <ChevronRight size={14} />
+                      ))}
+                  </>
                 )}
               </button>
+
               {isGroup && open && !collapsed && (
-                <div style={{ paddingBottom: 4 }}>
+                <div>
                   {n.children.map((c) => (
-                    <button
+                    <div
                       key={c}
-                      onClick={() => go(c, n.id)}
-                      className="block w-full"
-                      style={{
-                        textAlign: "left",
-                        padding: "6px 14px 6px 41px",
-                        fontSize: 13,
-                        color: active === c ? T.accent : T.faint,
-                        background:
-                          active === c
-                            ? "rgba(34,211,238,0.06)"
-                            : "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
+                      className="flex items-center justify-between pr-3.5"
                     >
-                      {c}
-                    </button>
+                      <button
+                        onClick={() => go(c, n.id)}
+                        className={`flex-1 text-left py-1.5 pl-10 pr-2
+                          ${
+                            active === c
+                              ? "bg-[rgba(34,211,238,0.06)] text-[var(--color-accent)]"
+                              : "text-[var(--color-faint)]"
+                          }
+                          hover:bg-[var(--color-panel-alt)] cursor-pointer`}
+                      >
+                        {c}
+                      </button>
+
+                      {/* Only show remove button if admin */}
+                      {admin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeMenuItem(n.id, c);
+                          }}
+                          className="bg-transparent border-none text-red-400 cursor-pointer opacity-0 hover:opacity-100 transition-opacity text-sm p-1"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -144,19 +145,16 @@ export default function Sidebar({
         })}
       </nav>
 
+      {/* Collapse toggle */}
       <button
         onClick={() => onCollapsedToggle(!collapsed)}
-        className="flex items-center justify-center"
-        style={{
-          height: 44,
-          background: "transparent",
-          border: "none",
-          borderTop: `1px solid ${T.border}`,
-          color: T.faint,
-          cursor: "pointer",
-        }}
+        className="h-11 bg-transparent border-none border-t border-[var(--color-border)] text-[var(--color-faint)] cursor-pointer flex items-center justify-center"
       >
-        {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+        {collapsed ? (
+          <PanelLeftOpen size={17} />
+        ) : (
+          <PanelLeftClose size={17} />
+        )}
       </button>
     </aside>
   );

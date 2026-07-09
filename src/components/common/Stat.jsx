@@ -1,60 +1,17 @@
-import React from "react";
 import Card from "./Card";
-import { T } from "../../constants/theme";
 
-export default function Stat({
-  label,
-  value,
-  unit,
-  delta,
-  tone,
-}) {
+export default function Stat({ label, value, unit, delta, tone }) {
   return (
     <Card>
-      <div
-        style={{
-          color: T.muted,
-          fontSize: 12,
-          marginTop: 10,
-        }}
-      >
-        {label}
+      <div className="text-[var(--color-muted)] text-xs mt-2.5">{label}</div>
+      <div className="flex items-baseline gap-2 mt-1">
+        <span className="font-mono text-3xl text-[var(--color-text)]">{value}</span>
+        {unit && <span className="text-[var(--color-faint)] text-sm">{unit}</span>}
       </div>
-
-      <div
-        className="flex items-baseline gap-2"
-        style={{ marginTop: 4 }}
-      >
-        <span
-          style={{
-            fontFamily: T.mono,
-            fontSize: 28,
-            color: T.text,
-          }}
-        >
-          {value}
-        </span>
-
-        {unit && (
-          <span
-            style={{
-              color: T.faint,
-              fontSize: 13,
-            }}
-          >
-            {unit}
-          </span>
-        )}
-      </div>
-
       {delta && (
         <div
-          style={{
-            fontFamily: T.mono,
-            fontSize: 12,
-            color: tone || T.ok,
-            marginTop: 2,
-          }}
+          className="font-mono text-xs mt-0.5"
+          style={{ color: tone || "var(--color-ok)" }}
         >
           {delta}
         </div>
