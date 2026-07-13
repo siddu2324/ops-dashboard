@@ -28,9 +28,25 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PreferencesPage = lazy(() => import("./pages/PreferencesPage"));
 const IncidentsPage = lazy(() => import("./pages/IncidentsPage"));
 const RCAPage = lazy(() => import("./pages/RCAPage"));
-const AuditLogPage = lazy(() => import("./pages/AuditLogPage")); // ✅ Lazy load AuditLog
+const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
+const StatisticsAndLicensing = lazy(() => import("./pages/StatisticsAndLicensing"));
+const DefaultPreferences = lazy(() => import("./pages/DefaultPreferences"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const OrganizationsPage = lazy(() => import("./pages/OrganizationsPage"));
+const MigrateToCloudPage = lazy(() => import("./pages/MigrateToCloudPage"));
+const ProvisioningPage = lazy(() => import("./pages/ProvisioningPage"));
+const PluginsPage = lazy(() => import("./pages/PluginsPage"));
+const ServiceAccountsPage = lazy(() => import("./pages/ServiceAccountsPage"));
+const MetricsPage = lazy(() => import("./pages/MetricsPage"));
 
-// ---- Placeholder data for pages that have no dedicated component ----
+// ---- Alerting pages ----
+const AlertRulesPage = lazy(() => import("./pages/AlertRulesPage"));
+const NotificationConfigPage = lazy(() => import("./pages/NotificationConfigPage"));
+const SilencesPage = lazy(() => import("./pages/SilencesPage"));
+const ActiveNotificationsPage = lazy(() => import("./pages/ActiveNotificationsPage"));
+const AlertingSettingsPage = lazy(() => import("./pages/AlertingSettingsPage"));
+
+// ---- Placeholder data (removed entries for pages with dedicated components) ----
 const PLACEHOLDER_DATA = {
   // Infrastructure
   Kubernetes: {
@@ -127,16 +143,21 @@ const PLACEHOLDER_DATA = {
     description: "Capacity planning insights. No data to display.",
     actionText: "Analyze capacity",
   },
-  // Administration
-  "Service Accounts": {
-    title: "Service Accounts",
-    description: "Manage service accounts. No accounts created.",
-    actionText: "Create service account",
+  // Administration – remaining placeholders
+  Correlations: {
+    title: "Correlations",
+    description: "Define correlations between data sources.",
+    actionText: "Add Correlation",
   },
-  Datasources: {
-    title: "Datasources",
-    description: "Connect your data sources. No datasources configured.",
-    actionText: "Add datasource",
+  Authentication: {
+    title: "Authentication",
+    description: "Configure authentication methods (OAuth, LDAP, SSO, etc.).",
+    actionText: "Configure Authentication",
+  },
+  Teams: {
+    title: "Teams",
+    description: "Manage teams and their members.",
+    actionText: "Manage Teams",
   },
 };
 
@@ -155,10 +176,25 @@ const PAGES = {
   Connections: ConnectionsPage,
   Profile: ProfilePage,
   Preferences: PreferencesPage,
-  "Audit Log": AuditLogPage, // ✅ Added mapping
+  "Audit Log": AuditLogPage,
+  "Statistics and licensing": StatisticsAndLicensing,
+  "Default preferences": DefaultPreferences,
+  Settings: SettingsPage,
+  Organizations: OrganizationsPage,
+  "Migrate to Grafana Cloud": MigrateToCloudPage,
+  Provisioning: ProvisioningPage,
+  Plugins: PluginsPage,
+  "Service accounts": ServiceAccountsPage,
+  Metrics: MetricsPage,
+  // ---- Alerting mappings ----
+  "Alert rules": AlertRulesPage,
+  "Notification configuration": NotificationConfigPage,
+  Silences: SilencesPage,
+  "Active notifications": ActiveNotificationsPage, // ✅ mapped
+  Settings: AlertingSettingsPage,   // ⚠️ Overrides Admin Settings – consider renaming to "Alert Settings"
 };
 
-// ---- Fallback UI for ErrorBoundary ----
+// ---- Fallback UI ----
 function ErrorFallback({ error, resetErrorBoundary }) {
   return (
     <div className="flex flex-col items-center justify-center h-screen p-5 text-center bg-[var(--color-bg)]">
@@ -182,12 +218,10 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 
 // ---- Dashboard Layout ----
 function DashboardLayout() {
-  // Read default page from localStorage, fallback to "Dashboards"
   const [active, setActive] = useState(() => {
     return localStorage.getItem("defaultPage") || "Dashboards";
   });
 
-  // Nav items with versioning
   const NAV_VERSION = "1.1";
   const [navItems, setNavItems] = useState(() => {
     const saved = localStorage.getItem("navItems");
@@ -201,8 +235,6 @@ function DashboardLayout() {
   });
 
   const [openGroups, setOpenGroups] = useState({ monitoring: true });
-
-  // Persist sidebar collapse state
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
     return saved === "true";
@@ -212,19 +244,35 @@ function DashboardLayout() {
     localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
   }, [collapsed]);
 
-  // Mobile sidebar state
   const [mobileOpen, setMobileOpen] = useState(false);
   const toggleMobile = () => setMobileOpen(!mobileOpen);
 
-  // Navigate to a page
+  // Helper to find parent group (works with nested groups)
+  const findParentGroup = (items, target, parentId = null) => {
+    for (const item of items) {
+      if (item.children) {
+        if (item.children.includes(target)) {
+          return item.id;
+        }
+        for (const child of item.children) {
+          if (typeof child === 'object' && child.children) {
+            const found = findParentGroup([child], target, child.id);
+            if (found) return found;
+          }
+        }
+      }
+    }
+    return null;
+  };
+
   const go = (item, groupId) => {
     setActive(item);
-    if (groupId) {
-      setOpenGroups((g) => ({ ...g, [groupId]: true }));
+    const parentId = groupId || findParentGroup(navItems, item);
+    if (parentId) {
+      setOpenGroups((g) => ({ ...g, [parentId]: true }));
     }
   };
 
-  // Add/remove sidebar items (admin only)
   const addMenuItem = (groupId) => {
     const name = prompt(`Add item to ${groupId}`);
     if (!name) return;
@@ -258,21 +306,17 @@ function DashboardLayout() {
   const section =
     navItems.find((n) => n.children?.includes(active))?.label || "Home";
 
-  // Determine which component to render
   const placeholder = PLACEHOLDER_DATA[active];
   const PageComponent = placeholder
     ? PlaceholderPage
     : PAGES[active] || GenericPage;
 
-  // For placeholder pages, we pass the title, description, actionText
-  // For normal pages, we pass name, section, go
   const pageProps = placeholder
     ? { ...placeholder }
     : { name: active, section, go };
 
   return (
     <div className="flex h-screen w-full bg-[var(--color-bg)] font-sans">
-      {/* Sidebar with overlay on mobile */}
       <div
         className={`
           fixed inset-y-0 left-0 z-30 transform transition-transform duration-300 ease-in-out
@@ -294,7 +338,6 @@ function DashboardLayout() {
         />
       </div>
 
-      {/* Overlay background when mobile sidebar is open */}
       {mobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-20 lg:hidden"

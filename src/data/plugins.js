@@ -1,0 +1,23 @@
+// src/data/plugins.js
+export const plugins = [
+  { id: 1, name: "Alertmanager", category: "Data Sources", installed: true },
+  { id: 2, name: "Azure Monitor", category: "Data Sources", installed: true },
+  { id: 3, name: "CloudWatch", category: "Data Sources", installed: true },
+  { id: 4, name: "Elasticsearch", category: "Data Sources", installed: true },
+  { id: 5, name: "Google Cloud Monitoring", category: "Data Sources", installed: true },
+  { id: 6, name: "Grafana Pyroscope", category: "Data Sources", installed: true },
+  { id: 7, name: "Graphite", category: "Data Sources", installed: true },
+  { id: 8, name: "InfluxDB", category: "Data Sources", installed: true },
+  { id: 9, name: "Jaeger", category: "Data Sources", installed: true },
+  { id: 10, name: "Loki", category: "Data Sources", installed: true },
+  { id: 11, name: "Microsoft SQL Server", category: "Data Sources", installed: true },
+  { id: 12, name: "MySQL", category: "Data Sources", installed: true },
+  { id: 13, name: "PostgreSQL", category: "Data Sources", installed: false },
+  { id: 14, name: "Prometheus", category: "Data Sources", installed: false },
+  { id: 15, name: "Tempo", category: "Data Sources", installed: false },
+  { id: 16, name: "Zabbix", category: "Data Sources", installed: false },
+  { id: 17, name: "Datadog", category: "Data Sources", installed: false },
+  { id: 18, name: "New Relic", category: "Data Sources", installed: false },
+  { id: 19, name: "Splunk", category: "Data Sources", installed: false },
+  { id: 20, name: "OpenSearch", category: "Data Sources", installed: false },
+];

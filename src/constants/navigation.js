@@ -8,14 +8,15 @@ import {
   BarChart3,
   Settings,
   UserCog,
+  Database,
+  Users,
+  Key,
+  Plug,
+  Bell,
 } from "lucide-react";
 
 export const NAV = [
-  {
-    id: "home",
-    label: "Home",
-    icon: Home,
-  },
+  { id: "home", label: "Home", icon: Home },
   {
     id: "monitoring",
     label: "Monitoring",
@@ -38,7 +39,20 @@ export const NAV = [
     id: "operations",
     label: "Operations",
     icon: Siren,
-    children: ["Alerting", "Incidents", "RCA", "Automation"],
+    children: ["Incidents", "RCA", "Automation"], // removed "Alerting"
+  },
+  // ---- NEW Alerting section ----
+  {
+    id: "alerting",
+    label: "Alerting",
+    icon: Bell,
+    children: [
+      "Alert rules",
+      "Notification configuration",
+      "Silences",
+      "Active notifications",
+      "Settings", // ⚠️ Will conflict with Admin "Settings" – consider renaming to "Alert Settings"
+    ],
   },
   {
     id: "ai",
@@ -52,18 +66,44 @@ export const NAV = [
     icon: BarChart3,
     children: ["Executive Dashboard", "SLA", "Availability", "Capacity"],
   },
+  // ---- Administration (nested) ----
   {
     id: "administration",
     label: "Administration",
     icon: Settings,
     children: [
-      "Users",
-      "Teams",
-      "Service Accounts",
-      "Datasources",
-      "Connections",
-      "Audit Log",   // ✅ Added
+      {
+        id: "general",
+        label: "General",
+        icon: Settings,
+        children: [
+          "Statistics and licensing",
+          "Default preferences",
+          "Settings", // 👈 This will be overridden by Alerting Settings if the same key is used
+          "Organizations",
+          "Migrate to Grafana Cloud",
+          "Provisioning",
+        ],
+      },
+      {
+        id: "plugins-data",
+        label: "Plugins and data",
+        icon: Database,
+        children: ["Plugins", "Correlations"],
+      },
+      {
+        id: "users-access",
+        label: "Users and access",
+        icon: Users,
+        children: ["Users", "Teams", "Service accounts"],
+      },
+      { id: "authentication", label: "Authentication", icon: Key },
     ],
+  },
+  {
+    id: "connections",
+    label: "Connections",
+    icon: Plug,
   },
   {
     id: "user",

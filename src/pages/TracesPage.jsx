@@ -1,194 +1,455 @@
 import { useState, useEffect } from "react";
-import { Search, RefreshCw, ChevronDown, ChevronUp, AlertCircle, CheckCircle } from "lucide-react";
+import {
+  Search,
+  ChevronDown,
+  Grid,
+  List,
+  Rows,
+  Plus,
+  AlertCircle,
+  Activity,
+} from "lucide-react";
 import { toast } from "react-hot-toast";
-import Card from "../components/common/Card";
-import { initialTraces, generateNewTrace } from "../data/traces";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
+import TimePicker from "../components/common/TimePicker";
+import ComparisonView from "../components/ComparisonView";
+import TracesListView from "../components/TracesListView"; // ✅ Import the new component
+
+// Helper to generate random data for charts
+const generateChartData = (points = 10) => {
+  const now = Date.now();
+  return Array.from({ length: points }, (_, i) => {
+    const time = new Date(now - (points - i) * 6000);
+    return {
+      time: time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      value: Math.floor(Math.random() * 80) + 20,
+    };
+  });
+};
+
+// Initial data for each metric
+const initialData = {
+  spanRate: generateChartData(),
+  errorRate: generateChartData(),
+  latency: generateChartData(),
+  serviceStructure: generateChartData(),
+  comparison: generateChartData(),
+  traces: generateChartData(),
+};
 
 export default function TracesPage() {
-  const [traces, setTraces] = useState(initialTraces);
-  const [filtered, setFiltered] = useState(traces);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [expandedTrace, setExpandedTrace] = useState(null);
+  const [dataSource, setDataSource] = useState("grafana");
+  const [filterMode, setFilterMode] = useState("root");
+  const [labelValue, setLabelValue] = useState("");
+  const [metricType, setMetricType] = useState("span-rate");
+  const [selectedAttribute, setSelectedAttribute] = useState("resource.service.name");
+  const [attributeSearch, setAttributeSearch] = useState("");
+  const [attributeTab, setAttributeTab] = useState("all");
+  const [traceId, setTraceId] = useState("");
+  const [viewMode, setViewMode] = useState("single");
+  const [showQueryError, setShowQueryError] = useState(true);
+  const [chartData, setChartData] = useState(initialData);
+  const [activeTab, setActiveTab] = useState("structure"); // structure, comparison, traces
 
-  // Auto-refresh every 10 seconds
+  // Auto-refresh every 3 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      refreshData(false);
-    }, 10000);
+      setChartData({
+        spanRate: generateChartData(),
+        errorRate: generateChartData(),
+        latency: generateChartData(),
+        serviceStructure: generateChartData(),
+        comparison: generateChartData(),
+        traces: generateChartData(),
+      });
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  const refreshData = (showToast = true) => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      const newTrace = generateNewTrace();
-      setTraces((prev) => {
-        const combined = [newTrace, ...prev];
-        return combined.slice(0, 100); // keep last 100 traces
-      });
-      if (showToast) toast.success("New trace added");
-      setIsRefreshing(false);
-    }, 500);
+  const attributes = {
+    favorites: ["resource.service.name", "http.method", "http.status_code"],
+    all: [
+      "resource.service.name",
+      "http.method",
+      "http.status_code",
+      "db.system",
+      "db.statement",
+      "net.peer.name",
+      "net.peer.port",
+      "http.url",
+      "http.route",
+      "http.user_agent",
+    ],
+    resource: ["resource.service.name", "resource.service.namespace", "resource.telemetry.sdk.name"],
+    span: ["http.method", "http.status_code", "db.system", "db.statement", "http.url"],
   };
 
-  // Apply filters
-  useEffect(() => {
-    let result = traces;
-    if (search.trim()) {
-      const term = search.toLowerCase();
-      result = result.filter(
-        (t) =>
-          t.id.toLowerCase().includes(term) ||
-          t.service.toLowerCase().includes(term)
-      );
+  const filteredAttributes = (attributes[attributeTab] || []).filter((attr) =>
+    attr.toLowerCase().includes(attributeSearch.toLowerCase())
+  );
+
+  const handleTraceIdSubmit = (e) => {
+    e.preventDefault();
+    if (traceId.trim()) {
+      toast.success(`Searching for trace: ${traceId}`);
     }
-    if (statusFilter !== "all") {
-      result = result.filter((t) => t.status === statusFilter);
-    }
-    setFiltered(result);
-  }, [search, statusFilter, traces]);
-
-  const toggleExpand = (id) => {
-    setExpandedTrace(expandedTrace === id ? null : id);
   };
 
-  const statusCounts = {
-    all: traces.length,
-    success: traces.filter((t) => t.status === "success").length,
-    error: traces.filter((t) => t.status === "error").length,
+  const handleTimeChange = (time) => {
+    toast.success(`Time range updated: ${time.range || time.from + " → " + time.to}`);
   };
+
+  const chartConfigs = [
+    { key: "spanRate", label: "Span rate", color: "#22D3EE" },
+    { key: "errorRate", label: "Error rate", color: "#F87171" },
+    { key: "latency", label: "Latency", color: "#FBBF24" },
+    { key: "serviceStructure", label: "Service structure", color: "#34D399" },
+    { key: "comparison", label: "Comparison", color: "#A78BFA" },
+    { key: "traces", label: "Traces", color: "#F472B6" },
+  ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] max-w-7xl mx-auto space-y-3">
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between flex-shrink-0">
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="max-w-7xl mx-auto space-y-4">
+      {/* Header with breadcrumb and TimePicker */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-[var(--color-muted)]">Drilldown</span>
+          <ChevronDown size={12} className="text-[var(--color-muted)]" />
+          <span className="text-[var(--color-muted)]">Traces</span>
+          <ChevronDown size={12} className="text-[var(--color-muted)]" />
+          <span className="text-[var(--color-text)] font-semibold">Traces Drilldown</span>
+        </div>
+        <TimePicker onTimeChange={handleTimeChange} />
+      </div>
+
+      {/* Data source + filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-[var(--color-muted)]">Data source</span>
+          <select
+            value={dataSource}
+            onChange={(e) => setDataSource(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+          >
+            <option value="grafana">Grafana</option>
+            <option value="tempo">Tempo</option>
+            <option value="jaeger">Jaeger</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setStatusFilter("all")}
-            className={`px-3 py-1 text-xs rounded-full border transition ${
-              statusFilter === "all"
+            onClick={() => setFilterMode("root")}
+            className={`px-3 py-1 text-sm rounded-full border transition ${
+              filterMode === "root"
                 ? "bg-[var(--color-accent)] text-[#06222A] border-[var(--color-accent)]"
                 : "bg-transparent text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-text)]"
             }`}
           >
-            All ({statusCounts.all})
+            Root spans
           </button>
           <button
-            onClick={() => setStatusFilter("success")}
-            className={`px-3 py-1 text-xs rounded-full border transition ${
-              statusFilter === "success"
-                ? "bg-[var(--color-ok)] text-[#06222A] border-[var(--color-ok)]"
+            onClick={() => setFilterMode("all")}
+            className={`px-3 py-1 text-sm rounded-full border transition ${
+              filterMode === "all"
+                ? "bg-[var(--color-accent)] text-[#06222A] border-[var(--color-accent)]"
                 : "bg-transparent text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-text)]"
             }`}
           >
-            Success ({statusCounts.success})
-          </button>
-          <button
-            onClick={() => setStatusFilter("error")}
-            className={`px-3 py-1 text-xs rounded-full border transition ${
-              statusFilter === "error"
-                ? "bg-[var(--color-crit)] text-white border-[var(--color-crit)]"
-                : "bg-transparent text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-text)]"
-            }`}
-          >
-            Error ({statusCounts.error})
+            All spans
           </button>
         </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:flex-initial">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-faint)]" />
-            <input
-              type="text"
-              placeholder="Search trace ID or service..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full sm:w-48 pl-9 pr-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-xs"
-            />
-          </div>
-          <button
-            onClick={() => refreshData(true)}
-            disabled={isRefreshing}
-            className="p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-panel)] text-[var(--color-muted)] hover:text-[var(--color-text)] hover:border-[var(--color-text)] transition disabled:opacity-50"
+        <div className="flex items-center gap-1">
+          <Plus size={14} className="text-[var(--color-muted)]" />
+          <input
+            type="text"
+            placeholder="label = value"
+            value={labelValue}
+            onChange={(e) => setLabelValue(e.target.value)}
+            className="px-2 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent w-32"
+          />
+        </div>
+        <div>
+          <select
+            value={metricType}
+            onChange={(e) => setMetricType(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
           >
-            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          </button>
+            <option value="span-rate">Span rate</option>
+            <option value="error-rate">Error rate</option>
+            <option value="latency">Latency</option>
+          </select>
         </div>
       </div>
 
-      {/* Trace list */}
-      <div className="flex-1 bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-[var(--color-muted)]">
-            No traces match your filters.
+      {/* Metric cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3 text-center">
+          <div className="text-xs text-[var(--color-muted)]">Span rate</div>
+          <div className="text-2xl font-bold text-[var(--color-text)]">
+            {chartData.spanRate[chartData.spanRate.length - 1]?.value || 0}
           </div>
-        ) : (
-          <div className="overflow-y-auto h-full">
-            {filtered.map((trace) => {
-              const isExpanded = expandedTrace === trace.id;
-              return (
-                <div key={trace.id} className="border-b border-[var(--color-border)]">
-                  {/* Trace summary */}
-                  <div
-                    className="flex items-center gap-3 px-3 py-2 hover:bg-[var(--color-panel-alt)] cursor-pointer transition"
-                    onClick={() => toggleExpand(trace.id)}
-                  >
-                    <div className="flex-1 flex items-center gap-3 text-xs">
-                      <span className="font-mono text-[var(--color-text)] w-28 truncate">
-                        {trace.id}
-                      </span>
-                      <span className="text-[var(--color-muted)] w-24">{trace.service}</span>
-                      <span className="text-[var(--color-text)] font-mono w-16">
-                        {trace.duration}ms
-                      </span>
-                      <span className="flex items-center gap-1">
-                        {trace.status === "success" ? (
-                          <CheckCircle size={14} className="text-[var(--color-ok)]" />
-                        ) : (
-                          <AlertCircle size={14} className="text-[var(--color-crit)]" />
-                        )}
-                        <span className={`capitalize ${trace.status === "success" ? "text-[var(--color-ok)]" : "text-[var(--color-crit)]"}`}>
-                          {trace.status}
-                        </span>
-                      </span>
-                      <span className="text-[var(--color-faint)] font-mono">
-                        {new Date(trace.timestamp).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <button className="text-[var(--color-muted)] hover:text-[var(--color-text)]">
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </button>
-                  </div>
+          <div className="text-xs text-[var(--color-faint)]">Last update: now</div>
+        </div>
+        <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3 text-center">
+          <div className="text-xs text-[var(--color-muted)]">Error rate</div>
+          <div className="text-2xl font-bold text-[var(--color-text)]">
+            {chartData.errorRate[chartData.errorRate.length - 1]?.value || 0}
+          </div>
+          <div className="text-xs text-[var(--color-faint)]">Last update: now</div>
+        </div>
+        <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3 text-center">
+          <div className="text-xs text-[var(--color-muted)]">Latency</div>
+          <div className="text-2xl font-bold text-[var(--color-text)]">
+            {chartData.latency[chartData.latency.length - 1]?.value || 0}ms
+          </div>
+          <div className="text-xs text-[var(--color-faint)]">Last update: now</div>
+        </div>
+      </div>
 
-                  {/* Expanded details */}
-                  {isExpanded && (
-                    <div className="px-3 py-2 bg-[var(--color-bg)] border-t border-[var(--color-border)]">
-                      <div className="text-xs text-[var(--color-muted)] mb-1">Spans:</div>
-                      <div className="space-y-1">
-                        {trace.spans.map((span, idx) => (
-                          <div key={idx} className="flex items-center gap-3 text-xs">
-                            <span className="text-[var(--color-text)] w-32">{span.name}</span>
-                            <span className="text-[var(--color-faint)] font-mono w-16">{span.duration}ms</span>
-                            <span className={`capitalize ${span.status === "success" ? "text-[var(--color-ok)]" : "text-[var(--color-crit)]"}`}>
-                              {span.status}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+      {/* Breakdown tabs */}
+      <div className="flex items-center border-b border-[var(--color-border)]">
+        <button
+          onClick={() => setActiveTab("structure")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === "structure"
+              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+              : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          }`}
+        >
+          Service structure
+        </button>
+        <button
+          onClick={() => setActiveTab("comparison")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === "comparison"
+              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+              : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          }`}
+        >
+          Comparison
+        </button>
+        <button
+          onClick={() => setActiveTab("traces")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === "traces"
+              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+              : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          }`}
+        >
+          Traces
+        </button>
+      </div>
+
+      {/* Two‑column layout: Attributes + Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Attributes sidebar */}
+        <div className="lg:col-span-1 bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3 space-y-3">
+          <div className="text-sm text-[var(--color-muted)]">
+            Attributes are ordered by their rate of requests per second.
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[var(--color-muted)]">Rate</span>
+            <span className="text-[var(--color-muted)]">Error</span>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm bg-[var(--color-panel-alt)] p-1.5 rounded">
+              <span className="text-[var(--color-text)] font-medium">Selected:</span>
+              <span className="text-[var(--color-accent)]">{selectedAttribute}</span>
+            </div>
+            <div className="relative">
+              <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--color-faint)]" />
+              <input
+                type="text"
+                placeholder="Search attributes..."
+                value={attributeSearch}
+                onChange={(e) => setAttributeSearch(e.target.value)}
+                className="w-full pl-7 pr-2 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-xs focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              />
+            </div>
+            <div className="flex gap-1 text-xs">
+              <button
+                onClick={() => setAttributeTab("favorites")}
+                className={`px-2 py-0.5 rounded ${
+                  attributeTab === "favorites" ? "bg-[var(--color-accent)] text-[#06222A]" : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                }`}
+              >
+                Favorites
+              </button>
+              <button
+                onClick={() => setAttributeTab("all")}
+                className={`px-2 py-0.5 rounded ${
+                  attributeTab === "all" ? "bg-[var(--color-accent)] text-[#06222A]" : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setAttributeTab("resource")}
+                className={`px-2 py-0.5 rounded ${
+                  attributeTab === "resource" ? "bg-[var(--color-accent)] text-[#06222A]" : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                }`}
+              >
+                Resource
+              </button>
+              <button
+                onClick={() => setAttributeTab("span")}
+                className={`px-2 py-0.5 rounded ${
+                  attributeTab === "span" ? "bg-[var(--color-accent)] text-[#06222A]" : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                }`}
+              >
+                Span
+              </button>
+            </div>
+            <div className="max-h-40 overflow-y-auto space-y-0.5">
+              {filteredAttributes.map((attr) => (
+                <div
+                  key={attr}
+                  className={`text-xs px-2 py-1 rounded cursor-pointer hover:bg-[var(--color-panel-alt)] ${
+                    selectedAttribute === attr ? "bg-[var(--color-panel-alt)] text-[var(--color-accent)]" : "text-[var(--color-text)]"
+                  }`}
+                  onClick={() => setSelectedAttribute(attr)}
+                >
+                  {attr}
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      <div className="flex items-center justify-between text-xs text-[var(--color-muted)] flex-shrink-0">
-        <span>Showing {filtered.length} of {traces.length} traces</span>
-        <span>Auto-refresh every 10s</span>
+        {/* Main content */}
+        <div className="lg:col-span-3 space-y-3">
+          {/* Query error banner */}
+          {showQueryError && (
+            <div className="flex items-center gap-3 bg-[var(--color-crit)]/10 border border-[var(--color-crit)]/30 rounded-lg px-4 py-2 text-sm">
+              <AlertCircle size={16} className="text-[var(--color-crit)]" />
+              <span className="text-[var(--color-text)]">Query error</span>
+              <span className="text-[var(--color-muted)]">Datasource was not found</span>
+              <button
+                onClick={() => setShowQueryError(false)}
+                className="ml-auto text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          {/* Search and view controls */}
+          <div className="flex flex-wrap items-center gap-3">
+            <form onSubmit={handleTraceIdSubmit} className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Trace ID"
+                value={traceId}
+                onChange={(e) => setTraceId(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent w-48"
+              />
+              <span className="text-xs text-[var(--color-muted)]">Enter an ID and press Enter</span>
+            </form>
+            <div className="flex items-center gap-1 ml-auto">
+              <span className="text-xs text-[var(--color-muted)]">View</span>
+              <button
+                onClick={() => setViewMode("single")}
+                className={`p-1.5 rounded transition ${
+                  viewMode === "single" ? "bg-[var(--color-panel-alt)] text-[var(--color-accent)]" : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                }`}
+              >
+                <Activity size={16} />
+              </button>
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded transition ${
+                  viewMode === "grid" ? "bg-[var(--color-panel-alt)] text-[var(--color-accent)]" : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                }`}
+              >
+                <Grid size={16} />
+              </button>
+              <button
+                onClick={() => setViewMode("rows")}
+                className={`p-1.5 rounded transition ${
+                  viewMode === "rows" ? "bg-[var(--color-panel-alt)] text-[var(--color-accent)]" : "text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                }`}
+              >
+                <Rows size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Tab content */}
+          {activeTab === "structure" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {chartConfigs.map((cfg) => {
+                const data = chartData[cfg.key] || [];
+                return (
+                  <div
+                    key={cfg.key}
+                    className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3"
+                  >
+                    <div className="text-xs font-medium text-[var(--color-muted)] mb-1">{cfg.label}</div>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <AreaChart data={data}>
+                        <defs>
+                          <linearGradient id={`grad-${cfg.key}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={cfg.color} stopOpacity={0.3} />
+                            <stop offset="100%" stopColor={cfg.color} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid stroke="var(--color-border)" vertical={false} />
+                        <XAxis
+                          dataKey="time"
+                          tick={{ fontSize: 8, fill: "var(--color-faint)" }}
+                          tickLine={false}
+                          axisLine={false}
+                          interval={2}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 8, fill: "var(--color-faint)" }}
+                          tickLine={false}
+                          axisLine={false}
+                          domain={[0, 100]}
+                          width={20}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: "var(--color-panel)",
+                            border: "1px solid var(--color-border)",
+                            borderRadius: "6px",
+                            fontSize: "10px",
+                            color: "var(--color-text)",
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke={cfg.color}
+                          strokeWidth={2}
+                          fill={`url(#grad-${cfg.key})`}
+                          dot={false}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                    <div className="flex justify-between text-[10px] text-[var(--color-faint)] mt-1">
+                      <span>Latest: {data[data.length - 1]?.value || 0}</span>
+                      <span>⏱️ live</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {activeTab === "comparison" && <ComparisonView />}
+
+          {/* ✅ Traces tab now uses the TracesListView component */}
+          {activeTab === "traces" && <TracesListView />}
+        </div>
       </div>
     </div>
   );

@@ -117,24 +117,22 @@ export const WebSocketProvider = ({ children }) => {
 
     ws.onopen = () => {
       setConnectionStatus("connected");
-      toast.success("WebSocket connected");
+      toast.success("WebSocket connected", { duration: 3000 });
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         setLastMessage(data);
-        // If it's a critical alert, show a toast
+        // If it's a critical alert, show a toast (bottom position by default)
         if (data.type === "alert" && data.payload.severity === "critical") {
           toast.error(`🚨 Critical Alert: ${data.payload.name}`, {
             duration: 5000,
-            position: "top-right",
           });
         }
         if (data.type === "alert" && data.payload.severity === "warning") {
           toast(`⚠️ Warning: ${data.payload.name}`, {
             duration: 4000,
-            position: "top-right",
             icon: "⚠️",
           });
         }
