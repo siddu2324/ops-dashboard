@@ -17,7 +17,6 @@ export default function Sidebar({
 }) {
   const admin = isAdmin();
 
-  // Filter out admin-only groups for non-admins
   const filteredNavItems = admin
     ? navItems
     : navItems.filter((item) => !ADMIN_ONLY_GROUPS.includes(item.id));
@@ -39,7 +38,6 @@ export default function Sidebar({
     );
     const isActive = !isGroup && active === item.label;
 
-    // If it's a group with nested children (like General, Plugins, etc.)
     if (isGroup && hasNestedChildren) {
       return (
         <div key={item.id}>
@@ -70,7 +68,6 @@ export default function Sidebar({
       );
     }
 
-    // If it's a group with string children (like Monitoring, Infrastructure, etc.)
     if (isGroup && !hasNestedChildren) {
       const groupOpen = !!openGroups[item.id];
       const isActiveGroup = item.children && item.children.includes(active);
@@ -140,7 +137,6 @@ export default function Sidebar({
       );
     }
 
-    // Single item (like Authentication, Home, etc.)
     return (
       <button
         key={item.id}
@@ -163,11 +159,11 @@ export default function Sidebar({
 
   return (
     <aside
-      className="flex flex-col shrink-0 bg-[var(--color-panel)] border-r border-[var(--color-border)] transition-[width] duration-150"
+      className="flex flex-col shrink-0 h-full bg-[var(--color-panel)] border-r border-[var(--color-border)] transition-[width] duration-150"
       style={{ width: collapsed ? 64 : 236 }}
     >
       {/* Logo */}
-      <div className="flex items-center justify-center px-4 h-14 border-b border-[var(--color-border)]">
+      <div className="flex items-center justify-center px-4 h-14 border-b border-[var(--color-border)] shrink-0">
         <img src="/logo.png" alt="AiOps360" className="h-10 w-auto" />
       </div>
 
@@ -179,7 +175,7 @@ export default function Sidebar({
       {/* Collapse toggle */}
       <button
         onClick={() => onCollapsedToggle(!collapsed)}
-        className="h-11 bg-transparent border-none border-t border-[var(--color-border)] text-[var(--color-faint)] cursor-pointer flex items-center justify-center hover:text-[var(--color-text)] transition"
+        className="h-11 bg-transparent border-none border-t border-[var(--color-border)] text-[var(--color-faint)] cursor-pointer flex items-center justify-center hover:text-[var(--color-text)] transition shrink-0"
       >
         {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
       </button>
