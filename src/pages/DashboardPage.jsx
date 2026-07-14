@@ -18,7 +18,7 @@ import { useAlerts } from "../context/AlertContext";
 import { cpuSeries } from "../data/cpuSeries";
 import { reqSeries } from "../data/reqSeries";
 
-// ---------- CONSTANTS ----------
+// ---------- Constants ----------
 const EVENT_NAMES = [
   "Error: 401",
   "RequestError",
@@ -32,7 +32,35 @@ const EVENT_NAMES = [
 const EVENT_TYPES = ["Exceptions", "Timeout", "Resource", "Security", "Network", "Authentication"];
 const SEVERITIES = ["High", "Medium", "Low", "Critical"];
 
-// Generate mock events
+// Mock data for Memory Utilization
+const memoryData = [
+  { ip: "192.168.4.53", hostname: "VITSRVPDC01", min: 76.74, avg: 76.74, max: 76.74 },
+  { ip: "192.168.4.69", hostname: "VITBLRSRVAA01", min: 76.17, avg: 76.17, max: 76.17 },
+  { ip: "192.168.2.28", hostname: "VITBLRSRVDB01", min: 75.47, avg: 75.47, max: 75.47 },
+  { ip: "192.168.4.97", hostname: "vitblrsrvbkp01", min: 67.01, avg: 67.01, max: 67.01 },
+  { ip: "192.168.4.70", hostname: "VITBLRSRVAA02", min: 61.47, avg: 61.47, max: 61.47 },
+  { ip: "192.168.4.83", hostname: "VITBLRSRVWM01", min: 57.18, avg: 57.18, max: 57.18 },
+  { ip: "192.168.4.54", hostname: "VITSRVADC02", min: 57.04, avg: 57.04, max: 57.04 },
+  { ip: "192.168.6.90", hostname: "VITBLRSRVW01", min: 46.82, avg: 46.82, max: 46.82 },
+  { ip: "192.168.6.68", hostname: "ASPL_VITBLRSRVTS16", min: 46.61, avg: 46.61, max: 46.61 },
+  { ip: "192.168.4.60", hostname: "VITSRVPRTG01", min: 37.16, avg: 37.16, max: 37.16 },
+];
+
+// Mock data for CPU Utilization
+const cpuData = [
+  { ip: "192.168.4.53", hostname: "VITSRVPDC01", min: 45.2, avg: 52.8, max: 68.5 },
+  { ip: "192.168.4.69", hostname: "VITBLRSRVAA01", min: 38.7, avg: 44.1, max: 56.3 },
+  { ip: "192.168.2.28", hostname: "VITBLRSRVDB01", min: 22.5, avg: 28.9, max: 35.2 },
+  { ip: "192.168.4.97", hostname: "vitblrsrvbkp01", min: 15.3, avg: 19.8, max: 27.1 },
+  { ip: "192.168.4.70", hostname: "VITBLRSRVAA02", min: 61.2, avg: 68.7, max: 79.4 },
+  { ip: "192.168.4.83", hostname: "VITBLRSRVWM01", min: 33.4, avg: 39.2, max: 48.6 },
+  { ip: "192.168.4.54", hostname: "VITSRVADC02", min: 41.8, avg: 47.3, max: 55.9 },
+  { ip: "192.168.6.90", hostname: "VITBLRSRVW01", min: 28.1, avg: 34.5, max: 42.0 },
+  { ip: "192.168.6.68", hostname: "ASPL_VITBLRSRVTS16", min: 19.7, avg: 24.2, max: 31.8 },
+  { ip: "192.168.4.60", hostname: "VITSRVPRTG01", min: 12.4, avg: 16.9, max: 23.6 },
+];
+
+// Generate events
 const generateEvents = (count = 8) => {
   const now = Date.now();
   return Array.from({ length: count }, (_, i) => ({
@@ -45,33 +73,73 @@ const generateEvents = (count = 8) => {
   }));
 };
 
-export default function DashboardPage({ go }) {
+// ----- Dashboard Content Components -----
+const MemoryUtilizationReport = () => (
+  <Card title="Memory Utilization">
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-[var(--color-border)] text-[var(--color-muted)] text-xs uppercase tracking-wider">
+            <th className="py-2 px-3 font-medium">IP Address</th>
+            <th className="py-2 px-3 font-medium">Host name</th>
+            <th className="py-2 px-3 font-medium text-right">Memory Utilization MIN</th>
+            <th className="py-2 px-3 font-medium text-right">Memory Utilization AVG</th>
+            <th className="py-2 px-3 font-medium text-right">Memory Utilization MAX</th>
+          </tr>
+        </thead>
+        <tbody>
+          {memoryData.map((row) => (
+            <tr key={row.ip} className="border-b border-[var(--color-border)] hover:bg-[var(--color-panel-alt)] transition-colors">
+              <td className="py-2 px-3 text-[var(--color-text)] font-mono text-xs">{row.ip}</td>
+              <td className="py-2 px-3 text-[var(--color-text)]">{row.hostname}</td>
+              <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min} %</td>
+              <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg} %</td>
+              <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max} %</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </Card>
+);
+
+const CpuUtilizationReport = () => (
+  <Card title="CPU Utilization">
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-[var(--color-border)] text-[var(--color-muted)] text-xs uppercase tracking-wider">
+            <th className="py-2 px-3 font-medium">IP Address</th>
+            <th className="py-2 px-3 font-medium">Host name</th>
+            <th className="py-2 px-3 font-medium text-right">CPU Utilization MIN</th>
+            <th className="py-2 px-3 font-medium text-right">CPU Utilization AVG</th>
+            <th className="py-2 px-3 font-medium text-right">CPU Utilization MAX</th>
+          </tr>
+        </thead>
+        <tbody>
+          {cpuData.map((row) => (
+            <tr key={row.ip} className="border-b border-[var(--color-border)] hover:bg-[var(--color-panel-alt)] transition-colors">
+              <td className="py-2 px-3 text-[var(--color-text)] font-mono text-xs">{row.ip}</td>
+              <td className="py-2 px-3 text-[var(--color-text)]">{row.hostname}</td>
+              <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min} %</td>
+              <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg} %</td>
+              <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max} %</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </Card>
+);
+
+const DefaultDashboardContent = () => {
   const { activeAlertList, activeAlertCount, newAlertCount, resetNewAlertCount } = useAlerts();
   const [events, setEvents] = useState(generateEvents(8));
 
-  // ---- Back button state ----
-  const [dashboardName, setDashboardName] = useState("Default Dashboard");
-  const [showBack, setShowBack] = useState(false);
-
-  // ---- Load selected dashboard from localStorage ----
-  useEffect(() => {
-    const id = localStorage.getItem("selectedDashboard");
-    if (id) {
-      const dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
-      const found = dashboards.find((d) => d.id == id);
-      if (found) {
-        setDashboardName(found.name);
-        setShowBack(true);
-      }
-    }
-  }, []);
-
-  // ---- Reset new alert count on mount ----
   useEffect(() => {
     resetNewAlertCount();
   }, []);
 
-  // ---- Simulate new events every 10s ----
   useEffect(() => {
     const interval = setInterval(() => {
       setEvents((prev) => {
@@ -89,36 +157,10 @@ export default function DashboardPage({ go }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Use the activeAlertList array for recent alerts
   const recentAlerts = activeAlertList.slice(-5).reverse();
-
-  const handleStatClick = (page, groupId) => {
-    go(page, groupId);
-  };
-
-  const goBack = () => {
-    localStorage.removeItem("selectedDashboard");
-    go("Dashboards");
-  };
 
   return (
     <div className="grid gap-4">
-      {/* Back button (when viewing a specific dashboard) */}
-      {showBack && (
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={goBack}
-              className="text-sm text-[var(--color-accent)] hover:underline flex items-center gap-1"
-            >
-              ← Back to Dashboards
-            </button>
-            <span className="text-sm text-[var(--color-muted)]">|</span>
-            <span className="text-sm text-[var(--color-text)] font-medium">{dashboardName}</span>
-          </div>
-        </div>
-      )}
-
       {/* Stats */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
         <Stat
@@ -126,30 +168,10 @@ export default function DashboardPage({ go }) {
           value={activeAlertCount}
           delta={`${newAlertCount} new`}
           tone="var(--color-crit)"
-          onClick={() => handleStatClick("Active notifications", "alerting")}
         />
-        <Stat
-          label="Hosts up"
-          value="248"
-          unit="/ 251"
-          delta="99.2% fleet"
-          onClick={() => handleStatClick("Servers", "infrastructure")}
-        />
-        <Stat
-          label="p95 latency"
-          value="412"
-          unit="ms"
-          delta="-8% vs 24h"
-          onClick={() => handleStatClick("Metrics", "monitoring")}
-        />
-        <Stat
-          label="Error rate"
-          value="0.42"
-          unit="%"
-          delta="+0.11 pt"
-          tone="var(--color-warn)"
-          onClick={() => handleStatClick("Logs", "monitoring")}
-        />
+        <Stat label="Hosts up" value="248" unit="/ 251" delta="99.2% fleet" />
+        <Stat label="p95 latency" value="412" unit="ms" delta="-8% vs 24h" />
+        <Stat label="Error rate" value="0.42" unit="%" delta="+0.11 pt" tone="var(--color-warn)" />
       </div>
 
       {/* Charts */}
@@ -254,6 +276,69 @@ export default function DashboardPage({ go }) {
           </div>
         )}
       </Card>
+    </div>
+  );
+};
+
+// ---------- Main DashboardPage ----------
+export default function DashboardPage({ go }) {
+  const [dashboardName, setDashboardName] = useState("Main Dashboard");
+  const [showBack, setShowBack] = useState(false);
+  const [dashboardId, setDashboardId] = useState(null);
+
+  // Load selected dashboard on mount
+  useEffect(() => {
+    const id = localStorage.getItem("selectedDashboard");
+    if (id) {
+      setDashboardId(id);
+      const dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
+      const found = dashboards.find((d) => String(d.id) === String(id));
+      if (found) {
+        setDashboardName(found.name);
+        setShowBack(true);
+      } else {
+        setDashboardName("Main Dashboard");
+        setShowBack(false);
+      }
+    } else {
+      setDashboardName("Main Dashboard");
+      setShowBack(false);
+    }
+  }, []);
+
+  const goBack = () => {
+    localStorage.removeItem("selectedDashboard");
+    go("Dashboards");
+  };
+
+  // Determine which content to render
+  let Content;
+  if (dashboardName.includes("Memory Utilization")) {
+    Content = MemoryUtilizationReport;
+  } else if (dashboardName.includes("CPU Load")) {
+    Content = CpuUtilizationReport;
+  } else {
+    Content = DefaultDashboardContent;
+  }
+
+  return (
+    <div className="space-y-4">
+      {showBack && (
+        <div className="flex items-center gap-4 pb-2 border-b border-[var(--color-border)]">
+          <button
+            onClick={goBack}
+            className="text-sm text-[var(--color-accent)] hover:underline flex items-center gap-1"
+          >
+            ← Back to Dashboards
+          </button>
+          <span className="text-sm text-[var(--color-muted)]">|</span>
+          <span className="text-sm text-[var(--color-text)] font-medium">
+            {dashboardName}
+          </span>
+        </div>
+      )}
+
+      <Content />
     </div>
   );
 }

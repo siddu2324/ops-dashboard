@@ -1,10 +1,22 @@
-import { useState, useEffect } from "react";
-import { Plus, Trash2, Edit, LayoutDashboard, Eye } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Trash2, Edit, LayoutDashboard, Eye, Download, Upload } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 const STORAGE_KEY = "dashboards";
+
+// ---- Default dashboards (matches your screenshot) ----
 const defaultDashboards = [
   { id: 1, name: "Main Dashboard", description: "Default dashboard", createdAt: new Date().toISOString() },
+  { id: 2, name: "Top 10 Memory Utilization Report - Linux", description: "", createdAt: new Date().toISOString() },
+  { id: 3, name: "Top 10 CPU Load Report - Windows", description: "", createdAt: new Date().toISOString() },
+  { id: 4, name: "Top 10 CPU Load Report - Linux", description: "", createdAt: new Date().toISOString() },
+  { id: 5, name: 'Top 10 "C" Disk Utilization Report - Windows', description: "", createdAt: new Date().toISOString() },
+  { id: 6, name: 'Top 10 "J" Disk Utilization Report - Linux', description: "", createdAt: new Date().toISOString() },
+  { id: 7, name: "PostgreSQL", description: "", createdAt: new Date().toISOString() },
+  { id: 8, name: "MySQL", description: "", createdAt: new Date().toISOString() },
+  { id: 9, name: "Linux DC Location", description: "", createdAt: new Date().toISOString() },
+  { id: 10, name: "Firewall Dashboard", description: "", createdAt: new Date().toISOString() },
+  { id: 11, name: "Bangalore Dashboard", description: "", createdAt: new Date().toISOString() },
 ];
 
 const loadDashboards = () => {
@@ -14,6 +26,8 @@ const loadDashboards = () => {
       return JSON.parse(stored);
     } catch {}
   }
+  // If no stored data, seed with defaults (and also save them)
+  saveDashboards(defaultDashboards);
   return defaultDashboards;
 };
 
@@ -28,6 +42,7 @@ export default function DashboardListPage({ go }) {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     setDashboards(loadDashboards());
@@ -69,7 +84,7 @@ export default function DashboardListPage({ go }) {
   };
 
   const viewDashboard = (id) => {
-    localStorage.setItem("selectedDashboard", id);
+    localStorage.setItem("selectedDashboard", String(id));
     go("DashboardView");
   };
 
@@ -104,17 +119,77 @@ export default function DashboardListPage({ go }) {
     }
   };
 
+  // ---- Export / Import ----
+  const handleExport = () => {
+    const data = JSON.stringify(dashboards, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `dashboards_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Dashboard list exported");
+  };
+
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (!Array.isArray(imported)) throw new Error("Invalid format");
+        if (window.confirm(`Import ${imported.length} dashboards? This will replace your current list.`)) {
+          setDashboards(imported);
+          saveDashboards(imported);
+          toast.success(`${imported.length} dashboards imported`);
+        }
+      } catch (err) {
+        toast.error("Invalid JSON file");
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="max-w-6xl mx-auto space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-[var(--color-text)]">Dashboards</h1>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition"
-        >
-          <Plus size={16} />
-          Add Dashboard
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1 px-3 py-1.5 border border-[var(--color-border)] text-[var(--color-muted)] rounded-lg hover:bg-[var(--color-panel-alt)] transition text-sm"
+          >
+            <Download size={14} />
+            Export
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1 px-3 py-1.5 border border-[var(--color-border)] text-[var(--color-muted)] rounded-lg hover:bg-[var(--color-panel-alt)] transition text-sm"
+          >
+            <Upload size={14} />
+            Import
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition"
+          >
+            <Plus size={16} />
+            Add Dashboard
+          </button>
+        </div>
       </div>
 
       {dashboards.length === 0 ? (
