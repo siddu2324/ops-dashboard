@@ -56,6 +56,7 @@ const FirewallRealTimeInfo = lazy(() => import("./pages/dashboards/FirewallRealT
 const FirewallRealTimeInterfaceStatus = lazy(() => import("./pages/dashboards/FirewallRealTimeInterfaceStatus"));
 const FirewallRealTimeService = lazy(() => import("./pages/dashboards/FirewallRealTimeService"));
 const FirewallHistoricalPerformance = lazy(() => import("./pages/dashboards/FirewallHistoricalPerformance"));
+const NOCDashboard = lazy(() => import("./pages/dashboards/NOCDashboard"));
 
 // ---- Alerting pages ----
 const AlertRulesPage = lazy(() => import("./pages/AlertRulesPage"));
@@ -222,6 +223,8 @@ const PAGES = {
   "Real-time_Firewall Interface status": FirewallRealTimeInterfaceStatus,
   "Real-time_Firewall Service": FirewallRealTimeService,
   "Firewall_Historical Performance": FirewallHistoricalPerformance,
+  // ---- NOC Dashboard ----
+  "NOC Dashboard": NOCDashboard,
 };
 
 // ---- Fallback UI ----

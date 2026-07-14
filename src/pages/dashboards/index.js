@@ -13,3 +13,4 @@ export { default as FirewallRealTimeInfo } from "./FirewallRealTimeInfo";
 export { default as FirewallRealTimeInterfaceStatus } from "./FirewallRealTimeInterfaceStatus";
 export { default as FirewallRealTimeService } from "./FirewallRealTimeService";
 export { default as FirewallHistoricalPerformance } from "./FirewallHistoricalPerformance";
+

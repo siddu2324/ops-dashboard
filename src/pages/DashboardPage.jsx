@@ -31,6 +31,7 @@ import FirewallRealTimeInfo from "./dashboards/FirewallRealTimeInfo";
 import FirewallRealTimeInterfaceStatus from "./dashboards/FirewallRealTimeInterfaceStatus";
 import FirewallRealTimeService from "./dashboards/FirewallRealTimeService";
 import FirewallHistoricalPerformance from "./dashboards/FirewallHistoricalPerformance";
+import NOCDashboard from "./dashboards/NOCDashboard";
 
 // ---------- Constants ----------
 const EVENT_NAMES = [
@@ -194,6 +195,7 @@ const dashboardComponents = {
   "Real-time_Firewall Interface status": FirewallRealTimeInterfaceStatus,
   "Real-time_Firewall Service": FirewallRealTimeService,
   "Firewall_Historical Performance": FirewallHistoricalPerformance,
+  "NOC Dashboard": NOCDashboard,
 };
 
 // ---------- Main DashboardPage ----------
@@ -217,7 +219,7 @@ export default function DashboardPage({ go, active }) {
       setDashboardName("Main Dashboard");
       setShowBack(false);
     }
-  }, [active]); // 👈 dependency ensures it runs on every page change
+  }, [active]);
 
   const goBack = () => {
     localStorage.removeItem("selectedDashboard");
