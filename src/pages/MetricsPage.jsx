@@ -384,8 +384,6 @@ export default function MetricsPage() {
             className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
           >
             <option value="prometheus">prometheus</option>
-            <option value="graphite">graphite</option>
-            <option value="influxdb">influxdb</option>
           </select>
         </div>
         <div className="flex items-center gap-1">

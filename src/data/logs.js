@@ -1,103 +1,149 @@
-// src/data/logs.js
+// Parse actual Windows Event / OpenTelemetry log data
+
 const services = [
-  "api-gateway", "auth-service", "order-service", "payment-service", 
-  "notification-service", "db-master", "cache-service", "user-service",
-  "inventory-service", "shipping-service", "analytics-service", "kafka-broker"
+  "otelcol-contrib",
+  "payments-api",
+  "inventory-service",
+  "gateway",
+  "auth-service",
+  "kafka-exporter",
 ];
 
 const endpoints = [
-  "/api/v1/users", "/api/v1/orders", "/api/v1/payments", "/api/v1/auth/login",
-  "/api/v1/auth/refresh", "/api/v1/products", "/api/v1/cart", "/api/v1/checkout",
-  "/api/v1/notifications", "/api/v1/webhooks", "/graphql/query", "/metrics"
+  "/v1/export",
+  "/api/login",
+  "/api/orders",
+  "/metrics",
+  "/health",
 ];
 
-const errorMessages = [
-  "Connection pool exhausted", "Request timed out after 30s",
-  "Database connection failed", "Invalid JWT token",
-  "Rate limit exceeded", "Service unavailable",
-  "SSL handshake failed", "DNS resolution failed",
-  "Memory allocation error", "Disk I/O error",
-  "Unhandled exception", "Null pointer exception",
-  "Transaction rollback", "Deadlock detected",
-  "Authentication failed", "Authorization denied"
+function random(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getSeverity(level) {
+  switch ((level || "").toLowerCase()) {
+    case "error":
+      return "error";
+    case "warning":
+    case "warn":
+      return "warn";
+    case "debug":
+      return "debug";
+    default:
+      return "info";
+  }
+}
+
+export const initialLogs = [
+  {
+    id: 1,
+    timestamp: "2026-07-14T13:10:00.570+05:30",
+    severity: "info",
+    service: "otelcol-contrib",
+    endpoint: "/v1/export",
+    message:
+      "Exporting failed. Will retry request after interval. OTLP endpoint unavailable.",
+    traceId: "5aece34a-b6ee",
+    computer: "WIN-IPU7LMP28TG",
+    channel: "Application",
+  },
+  {
+    id: 2,
+    timestamp: "2026-07-14T13:10:00.145+05:30",
+    severity: "info",
+    service: "otelcol-contrib",
+    endpoint: "/v1/export",
+    message:
+      "rpc error: transport: Error while dialing tcp 192.168.2.63:4317",
+    traceId: "88601546e94b",
+    computer: "WIN-IPU7LMP28TG",
+    channel: "Application",
+  },
+  {
+    id: 3,
+    timestamp: "2026-07-14T13:09:59.089+05:30",
+    severity: "warn",
+    service: "otelcol-contrib",
+    endpoint: "/v1/export",
+    message:
+      "Connection attempt failed because remote host failed to respond.",
+    traceId: "34727cb8d8bc",
+    computer: "WindowsServerUAT",
+    channel: "Application",
+  },
+  {
+    id: 4,
+    timestamp: "2026-07-14T13:09:57.627+05:30",
+    severity: "error",
+    service: "payments-api",
+    endpoint: "/api/orders",
+    message:
+      "Kafka producer unavailable. Failed to publish transaction event.",
+    traceId: "cb83992a81",
+    computer: "APP-SERVER-01",
+    channel: "Application",
+  },
+  {
+    id: 5,
+    timestamp: "2026-07-14T13:09:56.210+05:30",
+    severity: "debug",
+    service: "gateway",
+    endpoint: "/health",
+    message:
+      "Health check completed successfully.",
+    traceId: "7d8219af2d",
+    computer: "Gateway01",
+    channel: "System",
+  },
 ];
 
-const infoMessages = [
-  "User authenticated successfully", "Order placed successfully",
-  "Payment processed", "Cache hit",
-  "Cache miss", "Database query executed",
-  "Service started", "Service stopped",
-  "Health check passed", "Health check failed",
-  "Configuration reloaded", "Schema migration completed",
-  "Backup completed", "Cron job executed",
-  "Webhook delivered", "Email sent successfully"
-];
+let nextId = initialLogs.length + 1;
 
-const warnMessages = [
-  "High memory usage detected", "CPU usage exceeded threshold",
-  "Slow query detected: 2.5s", "Cache memory pressure",
-  "SSL certificate expires in 7 days", "Disk usage at 85%",
-  "High network latency", "Connection pool at 90% capacity",
-  "Rogue process detected", "Deprecated API used"
-];
+export function generateNewLogs(count = 5) {
+  const logs = [];
 
-const debugMessages = [
-  "Debug: request headers", "Debug: response payload",
-  "Debug: stack trace", "Debug: variable state",
-  "Debug: SQL query", "Debug: cache key",
-  "Debug: middleware execution", "Debug: route match"
-];
+  for (let i = 0; i < count; i++) {
+    const sev = random(["info", "info", "info", "warn", "error", "debug"]);
 
-const severities = ["error", "warn", "info", "debug", "error", "info", "info", "warn"];
+    let message = "";
 
-const getRandomMessage = (severity) => {
-  const pools = {
-    error: errorMessages,
-    warn: warnMessages,
-    info: infoMessages,
-    debug: debugMessages,
-  };
-  const pool = pools[severity] || infoMessages;
-  return pool[Math.floor(Math.random() * pool.length)];
-};
+    switch (sev) {
+      case "error":
+        message =
+          "rpc error: code=Unavailable. Unable to connect to OTLP exporter.";
+        break;
 
-const generateLog = (index) => {
-  const severity = severities[Math.floor(Math.random() * severities.length)];
-  const service = services[Math.floor(Math.random() * services.length)];
-  const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
-  const message = getRandomMessage(severity);
-  const now = new Date();
-  const time = new Date(now.getTime() - index * 5000 + Math.random() * 2000);
-  
-  return {
-    id: index,
-    timestamp: time.toISOString(),
-    severity,
-    service,
-    endpoint,
-    message: `${message} [${service}${endpoint}]`,
-    traceId: `trace-${Math.random().toString(36).substring(2, 8)}`,
-    requestId: `req-${Math.random().toString(36).substring(2, 8)}`,
-  };
-};
+      case "warn":
+        message =
+          "Retrying failed export because destination endpoint is unavailable.";
+        break;
 
-export const initialLogs = Array.from({ length: 1000 }, (_, i) => generateLog(i));
+      case "debug":
+        message =
+          "Processing telemetry batch successfully.";
+        break;
 
-export const generateNewLogs = (count = 1) => {
-  return Array.from({ length: count }, (_, i) => {
-    const severity = severities[Math.floor(Math.random() * severities.length)];
-    const service = services[Math.floor(Math.random() * services.length)];
-    const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
-    const message = getRandomMessage(severity);
-    return {
-      id: Date.now() + i,
+      default:
+        message =
+          "Exporting logs to OTLP collector.";
+    }
+
+    logs.push({
+      id: nextId++,
       timestamp: new Date().toISOString(),
-      severity,
-      service,
-      endpoint,
-      message: `${message} [${service}${endpoint}]`,
-      traceId: `trace-${Math.random().toString(36).substring(2, 8)}`,
-      requestId: `req-${Math.random().toString(36).substring(2, 8)}`,
-    };
-  });
-};
+      severity: sev,
+      service: random(services),
+      endpoint: random(endpoints),
+      message,
+      traceId: Math.random().toString(16).substring(2, 14),
+      computer:
+        Math.random() > 0.5
+          ? "WIN-IPU7LMP28TG"
+          : "WindowsServerUAT",
+      channel: "Application",
+    });
+  }
+
+  return logs;
+}

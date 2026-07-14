@@ -17,6 +17,9 @@ import { logAction } from "./services/auditService";
 const HomePage = lazy(() => import("./pages/HomePage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ServersPage = lazy(() => import("./pages/ServersPage"));
+const KubernetesPage = lazy(() => import("./pages/KubernetesPage"));
+const DockerPage = lazy(() => import("./pages/DockerPage"));
+const VMwarePage = lazy(() => import("./pages/VMwarePage"));
 const LogsPage = lazy(() => import("./pages/LogsPage"));
 const TracesPage = lazy(() => import("./pages/TracesPage"));
 const AlertingPage = lazy(() => import("./pages/AlertingPage"));
@@ -47,23 +50,9 @@ const ActiveNotificationsPage = lazy(() => import("./pages/ActiveNotificationsPa
 const AlertingSettingsPage = lazy(() => import("./pages/AlertingSettingsPage"));
 
 // ---- Placeholder data (removed entries for pages with dedicated components) ----
+// REMOVED: Kubernetes from PLACEHOLDER_DATA since it now has a dedicated component
 const PLACEHOLDER_DATA = {
   // Infrastructure
-  Kubernetes: {
-    title: "Kubernetes",
-    description: "Everything running under your control. No kubernetes configured yet.",
-    actionText: "Set up Kubernetes",
-  },
-  Docker: {
-    title: "Docker",
-    description: "Manage your containers. No Docker hosts registered.",
-    actionText: "Add Docker host",
-  },
-  VMware: {
-    title: "VMware",
-    description: "Virtual machines under your control. No vCenter connected.",
-    actionText: "Connect vCenter",
-  },
   Cloud: {
     title: "Cloud",
     description: "Your cloud infrastructure. No cloud accounts linked.",
@@ -166,6 +155,9 @@ const PAGES = {
   Home: HomePage,
   Dashboards: DashboardPage,
   Servers: ServersPage,
+  Kubernetes: KubernetesPage,
+  Docker: DockerPage,
+  VMware: VMwarePage,
   Logs: LogsPage,
   Traces: TracesPage,
   Alerting: AlertingPage,
@@ -190,8 +182,8 @@ const PAGES = {
   "Alert rules": AlertRulesPage,
   "Notification configuration": NotificationConfigPage,
   Silences: SilencesPage,
-  "Active notifications": ActiveNotificationsPage, // ✅ mapped
-  Settings: AlertingSettingsPage,   // ⚠️ Overrides Admin Settings – consider renaming to "Alert Settings"
+  "Active notifications": ActiveNotificationsPage,
+  Settings: AlertingSettingsPage,
 };
 
 // ---- Fallback UI ----
