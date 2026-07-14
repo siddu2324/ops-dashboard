@@ -1,5 +1,5 @@
 // src/data/defaultDashboards.js
-export const CURRENT_VERSION = 2;
+export const CURRENT_VERSION = 3;
 
 export const defaultDashboards = [
   { id: 1, name: "Main Dashboard", description: "Default dashboard", createdAt: new Date().toISOString() },
@@ -14,4 +14,5 @@ export const defaultDashboards = [
   { id: 10, name: "Linux DC Location", description: "", createdAt: new Date().toISOString() },
   { id: 11, name: "Firewall Dashboard", description: "", createdAt: new Date().toISOString() },
   { id: 12, name: "Bangalore Dashboard", description: "", createdAt: new Date().toISOString() },
+  { id: 13, name: "NOC Dashboard", description: "", createdAt: new Date().toISOString() },
 ];
