@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Plus,
-  MoreVertical,
   Edit,
   Trash2,
   ChevronDown,
@@ -10,25 +9,20 @@ import {
   Clock,
   Calendar,
   Globe,
-  AlertCircle,
-  CheckCircle,
   X,
-  Copy,
   Send,
-  FileText, // ✅ Added missing import
+  FileText,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import Card from "../components/common/Card";
-import StatusDot from "../components/common/StatusDot";
 
-// ---------- Mock Data ----------
-const contactPoints = [
+// ---------- Default Data ----------
+const defaultContactPoints = [
   {
     id: 1,
     name: "Email-Alerts",
     usedBy: 1,
-    type: "Email",
-    config: "muniraja.g@quantanxt.com",
+    type: "email",
+    config: { email: "muniraja.g@quantanxt.com" },
     status: "failed",
     lastDelivery: "Last delivery attempt failed",
   },
@@ -36,16 +30,16 @@ const contactPoints = [
     id: 2,
     name: "empty",
     usedBy: 1,
-    type: "No integrations",
-    config: "No integrations configured",
+    type: "no-integrations",
+    config: {},
     status: "idle",
   },
   {
     id: 3,
     name: "Loki",
     usedBy: 12,
-    type: "Email",
-    config: "Secops-team@asplinfo.com",
+    type: "email",
+    config: { email: "Secops-team@asplinfo.com" },
     status: "failed",
     lastDelivery: "Last delivery attempt failed",
   },
@@ -53,16 +47,16 @@ const contactPoints = [
     id: 4,
     name: "Test",
     usedBy: 0,
-    type: "Email",
-    config: "No delivery attempts",
+    type: "email",
+    config: { email: "test@example.com" },
     status: "idle",
   },
   {
     id: 5,
     name: "Alertmanager",
     usedBy: 0,
-    type: "Alertmanager",
-    config: "Sends notifications to Alertmanager",
+    type: "alertmanager",
+    config: { url: "https://alertmanager.example.com" },
     status: "idle",
     lastDelivery: "No delivery attempts",
   },
@@ -70,57 +64,94 @@ const contactPoints = [
     id: 6,
     name: "Zabbix monitoring",
     usedBy: 4,
-    type: "Email",
-    config: "Secops-team@asplinfo.com",
+    type: "email",
+    config: { email: "Secops-team@asplinfo.com" },
     status: "failed",
     lastDelivery: "Last delivery attempt failed",
   },
 ];
 
-const defaultPolicy = {
-  id: "default",
-  name: "Default policy",
-  routes: 0,
-  deliveredTo: "empty",
-  groupedBy: ["grafana_folder", "alertname"],
-  groupWait: "30s",
-  groupInterval: "5m",
-  repeatInterval: "4h",
-};
-
-const timeRanges = [
-  { id: "weekdays", label: "Weekdays", start: "09:00", end: "17:00" },
+const defaultPolicies = [
+  {
+    id: "default",
+    name: "Default policy",
+    isDefault: true,
+    contactPoint: "empty",
+    groupBy: ["grafana_folder", "alertname"],
+    groupWait: "30s",
+    groupInterval: "5m",
+    repeatInterval: "4h",
+  },
 ];
 
-// ---------- Subcomponents ----------
-const StatusBadge = ({ status }) => {
-  const styles = {
-    failed: "text-[var(--color-crit)] bg-[var(--color-crit)]/10 border border-[var(--color-crit)]/30",
-    idle: "text-[var(--color-muted)] bg-[var(--color-border)]/30 border border-[var(--color-border)]",
-    delivered: "text-[var(--color-ok)] bg-[var(--color-ok)]/10 border border-[var(--color-ok)]/30",
-  };
-  return (
-    <span className={`px-2 py-0.5 text-xs rounded-full ${styles[status] || styles.idle}`}>
-      {status === "failed" ? "Failed" : status === "delivered" ? "Delivered" : "Idle"}
-    </span>
-  );
+const defaultTimeIntervals = [];
+
+// Storage keys
+const STORAGE_KEY_CONTACTS = "contactPoints";
+const STORAGE_KEY_POLICIES = "notificationPolicies";
+const STORAGE_KEY_INTERVALS = "timeIntervals";
+
+// Helpers
+const loadData = (key, defaultVal) => {
+  const stored = localStorage.getItem(key);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {}
+  }
+  return defaultVal;
 };
 
+const saveData = (key, data) => {
+  localStorage.setItem(key, JSON.stringify(data));
+};
+
+const generateId = () => Date.now() + Math.random() * 1000;
+
 // ---------- Modal Components ----------
-const NewPolicyModal = ({ isOpen, onClose, onSave }) => {
-  const [name, setName] = useState("");
-  const [contactPoint, setContactPoint] = useState("");
-  const [groupBy, setGroupBy] = useState(["grafana_folder", "alertname"]);
+const PolicyModal = ({ isOpen, onClose, onSave, editingPolicy, contactPoints }) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    contactPoint: "",
+    groupBy: ["grafana_folder", "alertname"],
+    groupWait: "30s",
+    groupInterval: "5m",
+    repeatInterval: "4h",
+  });
+
+  useEffect(() => {
+    if (editingPolicy && editingPolicy.id !== "default") {
+      setFormData({
+        name: editingPolicy.name,
+        contactPoint: editingPolicy.contactPoint || "",
+        groupBy: editingPolicy.groupBy || ["grafana_folder", "alertname"],
+        groupWait: editingPolicy.groupWait || "30s",
+        groupInterval: editingPolicy.groupInterval || "5m",
+        repeatInterval: editingPolicy.repeatInterval || "4h",
+      });
+    } else {
+      setFormData({
+        name: "",
+        contactPoint: "",
+        groupBy: ["grafana_folder", "alertname"],
+        groupWait: "30s",
+        groupInterval: "5m",
+        repeatInterval: "4h",
+      });
+    }
+  }, [editingPolicy, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name || !contactPoint) {
-      toast.error("Name and contact point are required");
+    if (!formData.name.trim()) {
+      toast.error("Policy name is required");
       return;
     }
-    onSave({ name, contactPoint, groupBy });
-    toast.success(`Policy "${name}" created`);
-    onClose();
+    if (!formData.contactPoint) {
+      toast.error("Contact point is required");
+      return;
+    }
+    onSave(formData);
   };
 
   if (!isOpen) return null;
@@ -129,52 +160,49 @@ const NewPolicyModal = ({ isOpen, onClose, onSave }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-[var(--color-text)]">New notification policy</h3>
+          <h3 className="text-xl font-bold text-[var(--color-text)]">
+            {editingPolicy && editingPolicy.id !== "default" ? "Edit Policy" : "New Policy"}
+          </h3>
           <button onClick={onClose} className="text-[var(--color-muted)] hover:text-[var(--color-text)]">
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-[var(--color-text)] font-medium text-sm mb-1">Name</label>
+            <label className="block text-[var(--color-muted)] text-sm mb-1">Name *</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="A unique name for the routing tree"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              placeholder="e.g. Critical Alerts"
             />
           </div>
           <div>
-            <label className="block text-[var(--color-text)] font-medium text-sm mb-1">Default contact point</label>
-            <div className="flex gap-2">
-              <select
-                value={contactPoint}
-                onChange={(e) => setContactPoint(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
-              >
-                <option value="">Choose a contact point</option>
-                {contactPoints.map((cp) => (
-                  <option key={cp.id} value={cp.name}>{cp.name}</option>
-                ))}
-              </select>
-              <button type="button" className="px-3 py-2 text-sm text-[var(--color-accent)] hover:underline whitespace-nowrap">
-                Create a contact point
-              </button>
-            </div>
+            <label className="block text-[var(--color-muted)] text-sm mb-1">Contact Point *</label>
+            <select
+              value={formData.contactPoint}
+              onChange={(e) => setFormData({ ...formData, contactPoint: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+            >
+              <option value="">Choose a contact point</option>
+              {contactPoints.map((cp) => (
+                <option key={cp.id} value={cp.name}>{cp.name}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label className="block text-[var(--color-text)] font-medium text-sm mb-1">Group by</label>
-            <p className="text-xs text-[var(--color-muted)] mb-2">
-              Combine multiple alerts into a single notification by grouping them by the same label values.
-            </p>
+            <label className="block text-[var(--color-muted)] text-sm mb-1">Group By</label>
             <div className="flex flex-wrap gap-2">
-              {groupBy.map((label) => (
+              {formData.groupBy.map((label) => (
                 <span key={label} className="flex items-center gap-1 px-2 py-1 bg-[var(--color-panel-alt)] border border-[var(--color-border)] rounded text-xs">
                   {label}
                   <button
                     type="button"
-                    onClick={() => setGroupBy(groupBy.filter((g) => g !== label))}
+                    onClick={() => setFormData({
+                      ...formData,
+                      groupBy: formData.groupBy.filter((g) => g !== label)
+                    })}
                     className="text-[var(--color-muted)] hover:text-[var(--color-crit)]"
                   >
                     <X size={12} />
@@ -185,7 +213,10 @@ const NewPolicyModal = ({ isOpen, onClose, onSave }) => {
                 type="button"
                 onClick={() => {
                   const newLabel = prompt("Enter label name:");
-                  if (newLabel) setGroupBy([...groupBy, newLabel]);
+                  if (newLabel) setFormData({
+                    ...formData,
+                    groupBy: [...formData.groupBy, newLabel]
+                  });
                 }}
                 className="px-2 py-1 text-xs border border-dashed border-[var(--color-border)] rounded text-[var(--color-muted)] hover:text-[var(--color-text)]"
               >
@@ -193,17 +224,44 @@ const NewPolicyModal = ({ isOpen, onClose, onSave }) => {
               </button>
             </div>
           </div>
-          <div>
-            <button type="button" className="text-sm text-[var(--color-accent)] hover:underline">
-              Timing options &gt;
-            </button>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[var(--color-muted)] text-xs mb-1">Group Wait</label>
+              <input
+                type="text"
+                value={formData.groupWait}
+                onChange={(e) => setFormData({ ...formData, groupWait: e.target.value })}
+                className="w-full px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+                placeholder="30s"
+              />
+            </div>
+            <div>
+              <label className="block text-[var(--color-muted)] text-xs mb-1">Group Interval</label>
+              <input
+                type="text"
+                value={formData.groupInterval}
+                onChange={(e) => setFormData({ ...formData, groupInterval: e.target.value })}
+                className="w-full px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+                placeholder="5m"
+              />
+            </div>
+            <div>
+              <label className="block text-[var(--color-muted)] text-xs mb-1">Repeat Interval</label>
+              <input
+                type="text"
+                value={formData.repeatInterval}
+                onChange={(e) => setFormData({ ...formData, repeatInterval: e.target.value })}
+                className="w-full px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+                placeholder="4h"
+              />
+            </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
             <button type="button" onClick={onClose} className="px-4 py-2 text-[var(--color-muted)] hover:text-[var(--color-text)]">
               Cancel
             </button>
             <button type="submit" className="px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90">
-              Create
+              {editingPolicy && editingPolicy.id !== "default" ? "Update" : "Create"}
             </button>
           </div>
         </form>
@@ -212,40 +270,74 @@ const NewPolicyModal = ({ isOpen, onClose, onSave }) => {
   );
 };
 
-const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
-  const [name, setName] = useState("");
-  const [timeRanges, setTimeRanges] = useState([{ start: "09:00", end: "17:00" }]);
-  const [location, setLocation] = useState("");
-  const [daysOfWeek, setDaysOfWeek] = useState([]);
-  const [daysOfMonth, setDaysOfMonth] = useState("");
-  const [months, setMonths] = useState("");
-  const [years, setYears] = useState("");
-
+const TimeIntervalModal = ({ isOpen, onClose, onSave, editingInterval }) => {
   const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+  const [formData, setFormData] = useState({
+    name: "",
+    timeRanges: [{ start: "09:00", end: "17:00" }],
+    location: "",
+    daysOfWeek: [],
+    daysOfMonth: "",
+    months: "",
+    years: "",
+  });
+
+  useEffect(() => {
+    if (editingInterval) {
+      setFormData({
+        name: editingInterval.name,
+        timeRanges: editingInterval.timeRanges || [{ start: "09:00", end: "17:00" }],
+        location: editingInterval.location || "",
+        daysOfWeek: editingInterval.daysOfWeek || [],
+        daysOfMonth: editingInterval.daysOfMonth || "",
+        months: editingInterval.months || "",
+        years: editingInterval.years || "",
+      });
+    } else {
+      setFormData({
+        name: "",
+        timeRanges: [{ start: "09:00", end: "17:00" }],
+        location: "",
+        daysOfWeek: [],
+        daysOfMonth: "",
+        months: "",
+        years: "",
+      });
+    }
+  }, [editingInterval, isOpen]);
+
   const toggleDay = (day) => {
-    setDaysOfWeek((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
+    setFormData((prev) => ({
+      ...prev,
+      daysOfWeek: prev.daysOfWeek.includes(day)
+        ? prev.daysOfWeek.filter((d) => d !== day)
+        : [...prev.daysOfWeek, day],
+    }));
   };
 
   const addTimeRange = () => {
-    setTimeRanges([...timeRanges, { start: "09:00", end: "17:00" }]);
+    setFormData((prev) => ({
+      ...prev,
+      timeRanges: [...prev.timeRanges, { start: "09:00", end: "17:00" }],
+    }));
   };
 
   const removeTimeRange = (idx) => {
-    setTimeRanges(timeRanges.filter((_, i) => i !== idx));
+    if (formData.timeRanges.length <= 1) return;
+    setFormData((prev) => ({
+      ...prev,
+      timeRanges: prev.timeRanges.filter((_, i) => i !== idx),
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name) {
+    if (!formData.name.trim()) {
       toast.error("Name is required");
       return;
     }
-    onSave({ name, timeRanges, location, daysOfWeek, daysOfMonth, months, years });
-    toast.success(`Time interval "${name}" created`);
-    onClose();
+    onSave(formData);
   };
 
   if (!isOpen) return null;
@@ -254,20 +346,22 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-[var(--color-text)]">New time interval</h3>
+          <h3 className="text-xl font-bold text-[var(--color-text)]">
+            {editingInterval ? "Edit Time Interval" : "New Time Interval"}
+          </h3>
           <button onClick={onClose} className="text-[var(--color-muted)] hover:text-[var(--color-text)]">
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-[var(--color-text)] font-medium text-sm mb-1">Name</label>
+            <label className="block text-[var(--color-muted)] text-sm mb-1">Name *</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="A unique name for the time interval"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              placeholder="A unique name for the time interval"
             />
           </div>
 
@@ -276,7 +370,7 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
             <p className="text-xs text-[var(--color-muted)] mb-3">
               A time interval item is a definition for a moment in time. All fields are lists, and at least one list element must be a moment of time will match the field. For an instant of time to match a complete time interval, all fields must match.
             </p>
-            {timeRanges.map((tr, idx) => (
+            {formData.timeRanges.map((tr, idx) => (
               <div key={idx} className="flex items-center gap-3 mb-2">
                 <div className="flex items-center gap-2 flex-1">
                   <div>
@@ -285,9 +379,9 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
                       type="time"
                       value={tr.start}
                       onChange={(e) => {
-                        const updated = [...timeRanges];
+                        const updated = [...formData.timeRanges];
                         updated[idx].start = e.target.value;
-                        setTimeRanges(updated);
+                        setFormData({ ...formData, timeRanges: updated });
                       }}
                       className="w-28 px-2 py-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm"
                     />
@@ -298,15 +392,15 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
                       type="time"
                       value={tr.end}
                       onChange={(e) => {
-                        const updated = [...timeRanges];
+                        const updated = [...formData.timeRanges];
                         updated[idx].end = e.target.value;
-                        setTimeRanges(updated);
+                        setFormData({ ...formData, timeRanges: updated });
                       }}
                       className="w-28 px-2 py-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm"
                     />
                   </div>
                 </div>
-                {timeRanges.length > 1 && (
+                {formData.timeRanges.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeTimeRange(idx)}
@@ -332,9 +426,9 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
               <Globe size={16} className="text-[var(--color-muted)]" />
               <input
                 type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Location"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="Location (e.g. UTC, America/New_York)"
                 className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
               />
             </div>
@@ -349,7 +443,7 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
                   type="button"
                   onClick={() => toggleDay(day)}
                   className={`px-3 py-1 text-sm rounded-full border transition ${
-                    daysOfWeek.includes(day)
+                    formData.daysOfWeek.includes(day)
                       ? "bg-[var(--color-accent)] text-[#06222A] border-[var(--color-accent)]"
                       : "bg-transparent text-[var(--color-muted)] border-[var(--color-border)] hover:border-[var(--color-text)]"
                   }`}
@@ -367,8 +461,8 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
             </p>
             <input
               type="text"
-              value={daysOfMonth}
-              onChange={(e) => setDaysOfMonth(e.target.value)}
+              value={formData.daysOfMonth}
+              onChange={(e) => setFormData({ ...formData, daysOfMonth: e.target.value })}
               placeholder="Example: 1, 14:16, -1"
               className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
             />
@@ -381,8 +475,8 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
             </p>
             <input
               type="text"
-              value={months}
-              onChange={(e) => setMonths(e.target.value)}
+              value={formData.months}
+              onChange={(e) => setFormData({ ...formData, months: e.target.value })}
               placeholder="Example: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12"
               className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
             />
@@ -393,8 +487,8 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
             <p className="text-xs text-[var(--color-muted)] mb-1">Example: 2021:2022, 2030</p>
             <input
               type="text"
-              value={years}
-              onChange={(e) => setYears(e.target.value)}
+              value={formData.years}
+              onChange={(e) => setFormData({ ...formData, years: e.target.value })}
               placeholder="Example: 2021:2022, 2030"
               className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
             />
@@ -419,7 +513,7 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
               Cancel
             </button>
             <button type="submit" className="px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90">
-              Save time interval
+              {editingInterval ? "Update" : "Save time interval"}
             </button>
           </div>
         </form>
@@ -431,44 +525,149 @@ const NewTimeIntervalModal = ({ isOpen, onClose, onSave }) => {
 // ---------- Main Component ----------
 export default function NotificationConfigPage() {
   const [activeTab, setActiveTab] = useState("contact-points");
+  const [contactPoints, setContactPoints] = useState([]);
+  const [policies, setPolicies] = useState([]);
+  const [timeIntervals, setTimeIntervals] = useState([]);
+  const [filteredContactPoints, setFilteredContactPoints] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showNewPolicy, setShowNewPolicy] = useState(false);
-  const [showNewTimeInterval, setShowNewTimeInterval] = useState(false);
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+  const [isIntervalModalOpen, setIsIntervalModalOpen] = useState(false);
+  const [editingPolicy, setEditingPolicy] = useState(null);
+  const [editingInterval, setEditingInterval] = useState(null);
 
-  const tabs = [
-    { id: "contact-points", label: "Contact points" },
-    { id: "notification-policies", label: "Notification policies" },
-    { id: "templates", label: "Templates" },
-    { id: "time-intervals", label: "Time intervals" },
-  ];
+  // Load data
+  useEffect(() => {
+    setContactPoints(loadData(STORAGE_KEY_CONTACTS, defaultContactPoints));
+    setPolicies(loadData(STORAGE_KEY_POLICIES, defaultPolicies));
+    setTimeIntervals(loadData(STORAGE_KEY_INTERVALS, defaultTimeIntervals));
+  }, []);
 
-  const filteredContactPoints = contactPoints.filter((cp) =>
-    cp.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter contacts
+  useEffect(() => {
+    let result = contactPoints;
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter((p) =>
+        p.name.toLowerCase().includes(term) ||
+        p.type.toLowerCase().includes(term)
+      );
+    }
+    setFilteredContactPoints(result);
+  }, [searchTerm, contactPoints]);
 
-  const handleAddContactPoint = () => {
-    toast.success("New contact point form would open here");
+  // Save on change
+  useEffect(() => {
+    if (contactPoints.length > 0) saveData(STORAGE_KEY_CONTACTS, contactPoints);
+  }, [contactPoints]);
+
+  useEffect(() => {
+    if (policies.length > 0) saveData(STORAGE_KEY_POLICIES, policies);
+  }, [policies]);
+
+  useEffect(() => {
+    if (timeIntervals.length > 0) saveData(STORAGE_KEY_INTERVALS, timeIntervals);
+  }, [timeIntervals]);
+
+  // ---- Contact Points CRUD (simplified) ----
+  const handleDeleteContactPoint = (id) => {
+    const point = contactPoints.find((p) => p.id === id);
+    if (!point) return;
+    if (window.confirm(`Are you sure you want to delete "${point.name}"?`)) {
+      setContactPoints(contactPoints.filter((p) => p.id !== id));
+      toast.success(`Contact point "${point.name}" deleted`);
+    }
   };
 
-  const handleEdit = (name) => {
-    toast.info(`Editing "${name}"`);
+  // ---- Policies CRUD ----
+  const handleAddPolicy = (data) => {
+    const policy = { ...data, id: generateId(), isDefault: false };
+    setPolicies([...policies, policy]);
+    toast.success(`Policy "${policy.name}" created`);
+    setIsPolicyModalOpen(false);
   };
 
-  const handleMore = (name) => {
-    toast.info(`More options for "${name}"`);
+  const handleEditPolicy = (updated) => {
+    setPolicies(policies.map((p) => (p.id === updated.id ? { ...updated } : p)));
+    toast.success(`Policy "${updated.name}" updated`);
+    setIsPolicyModalOpen(false);
+    setEditingPolicy(null);
   };
 
-  const handleNewPolicy = (data) => {
-    // In real app, save to state/backend
-    console.log("New policy:", data);
+  const handleDeletePolicy = (id) => {
+    const policy = policies.find((p) => p.id === id);
+    if (!policy || policy.isDefault) {
+      toast.error("Cannot delete the default policy");
+      return;
+    }
+    if (window.confirm(`Delete policy "${policy.name}"?`)) {
+      setPolicies(policies.filter((p) => p.id !== id));
+      toast.success(`Policy "${policy.name}" deleted`);
+    }
   };
 
-  const handleNewTimeInterval = (data) => {
-    console.log("New time interval:", data);
+  const openPolicyModal = (policy = null) => {
+    setEditingPolicy(policy);
+    setIsPolicyModalOpen(true);
+  };
+
+  const closePolicyModal = () => {
+    setIsPolicyModalOpen(false);
+    setEditingPolicy(null);
+  };
+
+  const handleSavePolicy = (data) => {
+    if (editingPolicy && editingPolicy.id !== "default") {
+      handleEditPolicy({ ...data, id: editingPolicy.id });
+    } else {
+      handleAddPolicy(data);
+    }
+  };
+
+  // ---- Time Intervals CRUD ----
+  const handleAddInterval = (data) => {
+    const interval = { ...data, id: generateId() };
+    setTimeIntervals([...timeIntervals, interval]);
+    toast.success(`Time interval "${interval.name}" created`);
+    setIsIntervalModalOpen(false);
+  };
+
+  const handleEditInterval = (updated) => {
+    setTimeIntervals(timeIntervals.map((i) => (i.id === updated.id ? { ...updated } : i)));
+    toast.success(`Time interval "${updated.name}" updated`);
+    setIsIntervalModalOpen(false);
+    setEditingInterval(null);
+  };
+
+  const handleDeleteInterval = (id) => {
+    const interval = timeIntervals.find((i) => i.id === id);
+    if (!interval) return;
+    if (window.confirm(`Delete time interval "${interval.name}"?`)) {
+      setTimeIntervals(timeIntervals.filter((i) => i.id !== id));
+      toast.success(`Time interval "${interval.name}" deleted`);
+    }
+  };
+
+  const openIntervalModal = (interval = null) => {
+    setEditingInterval(interval);
+    setIsIntervalModalOpen(true);
+  };
+
+  const closeIntervalModal = () => {
+    setIsIntervalModalOpen(false);
+    setEditingInterval(null);
+  };
+
+  const handleSaveInterval = (data) => {
+    if (editingInterval) {
+      handleEditInterval({ ...data, id: editingInterval.id });
+    } else {
+      handleAddInterval(data);
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-[var(--color-text)]">Notification configuration</h1>
         <p className="text-sm text-[var(--color-muted)]">
@@ -478,22 +677,49 @@ export default function NotificationConfigPage() {
 
       {/* Tabs */}
       <div className="flex items-center border-b border-[var(--color-border)]">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
-              activeTab === tab.id
-                ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-                : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <button
+          onClick={() => setActiveTab("contact-points")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === "contact-points"
+              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+              : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          }`}
+        >
+          Contact points
+        </button>
+        <button
+          onClick={() => setActiveTab("notification-policies")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === "notification-policies"
+              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+              : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          }`}
+        >
+          Notification policies
+        </button>
+        <button
+          onClick={() => setActiveTab("templates")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === "templates"
+              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+              : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          }`}
+        >
+          Templates
+        </button>
+        <button
+          onClick={() => setActiveTab("time-intervals")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+            activeTab === "time-intervals"
+              ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+              : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          }`}
+        >
+          Time intervals
+        </button>
       </div>
 
-      {/* Content */}
+      {/* ---- CONTACT POINTS ---- */}
       {activeTab === "contact-points" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -507,59 +733,37 @@ export default function NotificationConfigPage() {
                 className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleAddContactPoint}
-                className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition text-sm"
-              >
-                <Plus size={14} />
-                New contact point
-              </button>
-              <button className="px-3 py-1.5 border border-[var(--color-border)] text-[var(--color-text)] rounded-lg hover:bg-[var(--color-panel-alt)] transition text-sm">
-                Export all
-              </button>
-            </div>
+            <button
+              onClick={() => toast.info("New contact point form coming soon")}
+              className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition text-sm"
+            >
+              <Plus size={14} />
+              New contact point
+            </button>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredContactPoints.map((cp) => (
-              <div
-                key={cp.id}
-                className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4 hover:border-[var(--color-accent)] transition"
-              >
+              <div key={cp.id} className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[var(--color-text)] font-medium text-sm">{cp.name}</span>
-                      {cp.usedBy > 0 && (
-                        <span className="text-xs text-[var(--color-muted)] bg-[var(--color-panel-alt)] px-2 py-0.5 rounded-full">
-                          Used by {cp.usedBy} alert rules
-                        </span>
-                      )}
+                  <div>
+                    <div className="font-medium text-[var(--color-text)]">{cp.name}</div>
+                    <div className="text-xs text-[var(--color-muted)] capitalize">{cp.type}</div>
+                    <div className="text-xs text-[var(--color-text)] font-mono truncate">
+                      {cp.config.email || cp.config.url || "No config"}
                     </div>
-                    <div className="text-xs text-[var(--color-muted)] mt-1">{cp.type}</div>
-                    <div className="text-xs text-[var(--color-text)] font-mono mt-1">{cp.config}</div>
-                    {(cp.status === "failed" || cp.lastDelivery) && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <StatusBadge status={cp.status} />
-                        {cp.lastDelivery && (
-                          <span className="text-xs text-[var(--color-faint)]">{cp.lastDelivery}</span>
-                        )}
-                      </div>
-                    )}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex gap-1">
                     <button
-                      onClick={() => handleEdit(cp.name)}
-                      className="p-1 rounded hover:bg-[var(--color-panel-alt)] text-[var(--color-muted)] hover:text-[var(--color-text)] transition"
+                      onClick={() => toast.info(`Edit ${cp.name}`)}
+                      className="p-1 text-[var(--color-muted)] hover:text-[var(--color-text)]"
                     >
                       <Edit size={14} />
                     </button>
                     <button
-                      onClick={() => handleMore(cp.name)}
-                      className="p-1 rounded hover:bg-[var(--color-panel-alt)] text-[var(--color-muted)] hover:text-[var(--color-text)] transition"
+                      onClick={() => handleDeleteContactPoint(cp.id)}
+                      className="p-1 text-[var(--color-muted)] hover:text-[var(--color-crit)]"
                     >
-                      <MoreVertical size={14} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -569,30 +773,20 @@ export default function NotificationConfigPage() {
         </div>
       )}
 
+      {/* ---- NOTIFICATION POLICIES ---- */}
       {activeTab === "notification-policies" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="relative flex-1 max-w-sm">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-faint)]" />
-                <input
-                  type="text"
-                  placeholder="Search by matchers"
-                  className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
-                />
-              </div>
-              <select className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm">
-                <option>Contact point</option>
-                {contactPoints.map((cp) => (
-                  <option key={cp.id} value={cp.name}>{cp.name}</option>
-                ))}
-              </select>
-              <select className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm">
-                <option>Select policy trees</option>
-              </select>
+            <div className="relative flex-1 max-w-sm">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-faint)]" />
+              <input
+                type="text"
+                placeholder="Search policies..."
+                className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              />
             </div>
             <button
-              onClick={() => setShowNewPolicy(true)}
+              onClick={() => openPolicyModal()}
               className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition text-sm"
             >
               <Plus size={14} />
@@ -605,73 +799,128 @@ export default function NotificationConfigPage() {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[var(--color-text)] font-medium">{defaultPolicy.name}</span>
-                  <span className="text-xs text-[var(--color-muted)] bg-[var(--color-panel-alt)] px-2 py-0.5 rounded-full">
-                    {defaultPolicy.routes} routes
-                  </span>
+                  <span className="text-[var(--color-text)] font-medium">Default policy</span>
+                  <span className="text-xs bg-[var(--color-accent)]/20 text-[var(--color-accent)] px-2 py-0.5 rounded-full">Built-in</span>
                 </div>
                 <div className="text-xs text-[var(--color-muted)] mt-1 flex items-center gap-2">
                   <Send size={12} />
-                  Delivered to <span className="text-[var(--color-text)]">{defaultPolicy.deliveredTo}</span>
+                  Delivered to <span className="text-[var(--color-text)]">empty</span>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <span className="text-xs text-[var(--color-muted)] flex items-center gap-1">
                     <Clock size={12} />
-                    Grouped by {defaultPolicy.groupedBy.join(", ")}
+                    Grouped by grafana_folder, alertname
                   </span>
                   <span className="text-xs text-[var(--color-muted)] flex items-center gap-1">
                     <Clock size={12} />
-                    Wait {defaultPolicy.groupWait} to group instances
+                    Wait 30s to group instances
                   </span>
                   <span className="text-xs text-[var(--color-muted)] flex items-center gap-1">
                     <Clock size={12} />
-                    Wait {defaultPolicy.groupInterval} before sending updates
+                    Wait 5m before sending updates
                   </span>
                   <span className="text-xs text-[var(--color-muted)] flex items-center gap-1">
                     <Clock size={12} />
-                    Repeated every {defaultPolicy.repeatInterval}
+                    Repeated every 4h
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex gap-2">
                 <button className="text-sm text-[var(--color-accent)] hover:underline">+ Add route</button>
-                <button className="text-sm text-[var(--color-muted)] hover:text-[var(--color-text)]">More</button>
               </div>
             </div>
           </div>
+
+          {/* Custom Policies List */}
+          {policies.filter(p => !p.isDefault).length === 0 ? (
+            <div className="text-center py-8 text-[var(--color-muted)]">No custom policies created</div>
+          ) : (
+            policies.filter(p => !p.isDefault).map((policy) => (
+              <div key={policy.id} className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[var(--color-text)] font-medium">{policy.name}</span>
+                    </div>
+                    <div className="text-xs text-[var(--color-muted)] mt-1 flex items-center gap-2">
+                      <Send size={12} />
+                      Delivered to <span className="text-[var(--color-text)]">{policy.contactPoint}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <span className="text-xs text-[var(--color-muted)] flex items-center gap-1">
+                        <Clock size={12} />
+                        Grouped by {policy.groupBy.join(", ")}
+                      </span>
+                      <span className="text-xs text-[var(--color-muted)] flex items-center gap-1">
+                        <Clock size={12} />
+                        Wait {policy.groupWait} to group instances
+                      </span>
+                      <span className="text-xs text-[var(--color-muted)] flex items-center gap-1">
+                        <Clock size={12} />
+                        Wait {policy.groupInterval} before sending updates
+                      </span>
+                      <span className="text-xs text-[var(--color-muted)] flex items-center gap-1">
+                        <Clock size={12} />
+                        Repeated every {policy.repeatInterval}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => openPolicyModal(policy)}
+                      className="p-1 text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                    >
+                      <Edit size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeletePolicy(policy.id)}
+                      className="p-1 text-[var(--color-muted)] hover:text-[var(--color-crit)]"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+
+          <PolicyModal
+            isOpen={isPolicyModalOpen}
+            onClose={closePolicyModal}
+            onSave={handleSavePolicy}
+            editingPolicy={editingPolicy}
+            contactPoints={contactPoints}
+          />
         </div>
       )}
 
+      {/* ---- TEMPLATES ---- */}
       {activeTab === "templates" && (
         <div className="flex flex-col items-center justify-center py-16 text-center border border-[var(--color-border)] rounded-lg bg-[var(--color-panel)]">
-          <div className="w-16 h-16 rounded-full bg-[var(--color-panel-alt)] border border-[var(--color-border)] flex items-center justify-center mb-4">
-            <FileText size={24} className="text-[var(--color-faint)]" />
-          </div>
+          <FileText size={32} className="text-[var(--color-faint)] mb-4" />
           <h3 className="text-[var(--color-text)] font-medium text-lg">No templates created</h3>
-          <p className="text-[var(--color-muted)] text-sm max-w-sm mt-1">
-            You haven't created any notification templates yet.
-          </p>
-          <button
-            onClick={() => toast.success("Create template form would open here")}
-            className="mt-4 px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition"
-          >
-            Create template
-          </button>
+          <p className="text-[var(--color-muted)] text-sm max-w-sm mt-1">You haven't created any notification templates yet.</p>
         </div>
       )}
 
+      {/* ---- TIME INTERVALS ---- */}
       {activeTab === "time-intervals" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-[var(--color-muted)]">
-              Enter specific time intervals when not to send notifications or freeze notifications for recurring periods of time.
-            </p>
+            <div className="relative flex-1 max-w-sm">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-faint)]" />
+              <input
+                type="text"
+                placeholder="Search time intervals..."
+                className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              />
+            </div>
             <div className="flex items-center gap-2">
               <button className="px-3 py-1.5 border border-[var(--color-border)] text-[var(--color-text)] rounded-lg hover:bg-[var(--color-panel-alt)] transition text-sm">
                 Export all
               </button>
               <button
-                onClick={() => setShowNewTimeInterval(true)}
+                onClick={() => openIntervalModal()}
                 className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition text-sm"
               >
                 <Plus size={14} />
@@ -680,32 +929,82 @@ export default function NotificationConfigPage() {
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-center py-16 text-center border border-[var(--color-border)] rounded-lg bg-[var(--color-panel)]">
-            <div className="w-16 h-16 rounded-full bg-[var(--color-panel-alt)] border border-[var(--color-border)] flex items-center justify-center mb-4">
-              <Calendar size={24} className="text-[var(--color-faint)]" />
+          {timeIntervals.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center border border-[var(--color-border)] rounded-lg bg-[var(--color-panel)]">
+              <Calendar size={32} className="text-[var(--color-faint)] mb-4" />
+              <h3 className="text-[var(--color-text)] font-medium text-lg">You haven't created any time intervals yet</h3>
+              <button
+                onClick={() => openIntervalModal()}
+                className="mt-4 px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition"
+              >
+                + New time interval
+              </button>
             </div>
-            <h3 className="text-[var(--color-text)] font-medium text-lg">You haven't created any time intervals yet</h3>
-            <button
-              onClick={() => setShowNewTimeInterval(true)}
-              className="mt-4 px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition"
-            >
-              + New time interval
-            </button>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {timeIntervals.map((interval) => (
+                <div key={interval.id} className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium text-[var(--color-text)]">{interval.name}</div>
+                      <div className="text-xs text-[var(--color-muted)] mt-1">
+                        {interval.timeRanges.map((tr, i) => (
+                          <span key={i}>
+                            {tr.start}–{tr.end}
+                            {i < interval.timeRanges.length - 1 && ", "}
+                          </span>
+                        ))}
+                        {interval.location && ` (${interval.location})`}
+                      </div>
+                      {interval.daysOfWeek.length > 0 && (
+                        <div className="text-xs text-[var(--color-muted)] mt-1">
+                          Days: {interval.daysOfWeek.join(", ")}
+                        </div>
+                      )}
+                      {interval.daysOfMonth && (
+                        <div className="text-xs text-[var(--color-muted)] mt-1">
+                          Month days: {interval.daysOfMonth}
+                        </div>
+                      )}
+                      {interval.months && (
+                        <div className="text-xs text-[var(--color-muted)] mt-1">
+                          Months: {interval.months}
+                        </div>
+                      )}
+                      {interval.years && (
+                        <div className="text-xs text-[var(--color-muted)] mt-1">
+                          Years: {interval.years}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => openIntervalModal(interval)}
+                        className="p-1 text-[var(--color-muted)] hover:text-[var(--color-text)]"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteInterval(interval.id)}
+                        className="p-1 text-[var(--color-muted)] hover:text-[var(--color-crit)]"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <TimeIntervalModal
+            isOpen={isIntervalModalOpen}
+            onClose={closeIntervalModal}
+            onSave={handleSaveInterval}
+            editingInterval={editingInterval}
+          />
         </div>
       )}
-
-      {/* Modals */}
-      <NewPolicyModal
-        isOpen={showNewPolicy}
-        onClose={() => setShowNewPolicy(false)}
-        onSave={handleNewPolicy}
-      />
-      <NewTimeIntervalModal
-        isOpen={showNewTimeInterval}
-        onClose={() => setShowNewTimeInterval(false)}
-        onSave={handleNewTimeInterval}
-      />
     </div>
   );
 }

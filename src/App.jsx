@@ -11,6 +11,7 @@ import LoadingSpinner from "./components/common/LoadingSpinner";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import { isAuthenticated } from "./services/authService";
 import { WebSocketProvider } from "./context/WebSocketContext";
+import { AlertProvider } from "./context/AlertContext";
 import { logAction } from "./services/auditService";
 
 // ---- Lazy load pages ----
@@ -38,6 +39,9 @@ const ProvisioningPage = lazy(() => import("./pages/ProvisioningPage"));
 const PluginsPage = lazy(() => import("./pages/PluginsPage"));
 const ServiceAccountsPage = lazy(() => import("./pages/ServiceAccountsPage"));
 const MetricsPage = lazy(() => import("./pages/MetricsPage"));
+const TeamsPage = lazy(() => import("./pages/TeamsPage"));
+const CorrelationsPage = lazy(() => import("./pages/CorrelationsPage"));
+const AuthenticationPage = lazy(() => import("./pages/AuthenticationPage"));   // ✅ Added import
 
 // ---- Alerting pages ----
 const AlertRulesPage = lazy(() => import("./pages/AlertRulesPage"));
@@ -46,9 +50,8 @@ const SilencesPage = lazy(() => import("./pages/SilencesPage"));
 const ActiveNotificationsPage = lazy(() => import("./pages/ActiveNotificationsPage"));
 const AlertingSettingsPage = lazy(() => import("./pages/AlertingSettingsPage"));
 
-// ---- Placeholder data (removed entries for pages with dedicated components) ----
+// ---- Placeholder data ----
 const PLACEHOLDER_DATA = {
-  // Infrastructure
   Kubernetes: {
     title: "Kubernetes",
     description: "Everything running under your control. No kubernetes configured yet.",
@@ -69,7 +72,6 @@ const PLACEHOLDER_DATA = {
     description: "Your cloud infrastructure. No cloud accounts linked.",
     actionText: "Link cloud account",
   },
-  // Observability
   Prometheus: {
     title: "Prometheus",
     description: "Monitor your metrics. No Prometheus instances configured.",
@@ -95,13 +97,11 @@ const PLACEHOLDER_DATA = {
     description: "Enterprise monitoring. No Zabbix server linked.",
     actionText: "Link Zabbix",
   },
-  // Operations
   Automation: {
     title: "Automation",
     description: "Automate your workflows. No automation jobs defined.",
     actionText: "Define job",
   },
-  // AI
   "AI Assistant": {
     title: "AI Assistant",
     description: "Get intelligent recommendations. No queries yet.",
@@ -122,7 +122,6 @@ const PLACEHOLDER_DATA = {
     description: "Plan your resource usage. No predictions available.",
     actionText: "Run forecast",
   },
-  // Reports
   "Executive Dashboard": {
     title: "Executive Dashboard",
     description: "High-level overview. No data aggregated yet.",
@@ -143,7 +142,6 @@ const PLACEHOLDER_DATA = {
     description: "Capacity planning insights. No data to display.",
     actionText: "Analyze capacity",
   },
-  // Administration – remaining placeholders
   Correlations: {
     title: "Correlations",
     description: "Define correlations between data sources.",
@@ -186,12 +184,15 @@ const PAGES = {
   Plugins: PluginsPage,
   "Service accounts": ServiceAccountsPage,
   Metrics: MetricsPage,
+  Teams: TeamsPage,
+  Correlations: CorrelationsPage,
+  Authentication: AuthenticationPage,   // ✅ Added mapping
   // ---- Alerting mappings ----
   "Alert rules": AlertRulesPage,
   "Notification configuration": NotificationConfigPage,
   Silences: SilencesPage,
-  "Active notifications": ActiveNotificationsPage, // ✅ mapped
-  Settings: AlertingSettingsPage,   // ⚠️ Overrides Admin Settings – consider renaming to "Alert Settings"
+  "Active notifications": ActiveNotificationsPage,
+  "Alerting Settings": AlertingSettingsPage,
 };
 
 // ---- Fallback UI ----
@@ -218,11 +219,13 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 
 // ---- Dashboard Layout ----
 function DashboardLayout() {
+  // Read default page from localStorage, fallback to "Dashboards"
   const [active, setActive] = useState(() => {
     return localStorage.getItem("defaultPage") || "Dashboards";
   });
 
-  const NAV_VERSION = "1.1";
+  // Nav items with versioning
+  const NAV_VERSION = "1.4"; // bumped to 1.4 to force reload (optional)
   const [navItems, setNavItems] = useState(() => {
     const saved = localStorage.getItem("navItems");
     const savedVersion = localStorage.getItem("navItemsVersion");
@@ -235,6 +238,8 @@ function DashboardLayout() {
   });
 
   const [openGroups, setOpenGroups] = useState({ monitoring: true });
+
+  // Persist sidebar collapse state
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
     return saved === "true";
@@ -244,35 +249,38 @@ function DashboardLayout() {
     localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
   }, [collapsed]);
 
+  // Mobile sidebar state
   const [mobileOpen, setMobileOpen] = useState(false);
   const toggleMobile = () => setMobileOpen(!mobileOpen);
 
-  // Helper to find parent group (works with nested groups)
-  const findParentGroup = (items, target, parentId = null) => {
+  // ---- Helper to find the parent section for nested nav ----
+  const findSection = (items, target) => {
     for (const item of items) {
-      if (item.children) {
-        if (item.children.includes(target)) {
-          return item.id;
-        }
+      // Direct child
+      if (item.children && item.children.includes(target)) {
+        return item.label;
+      }
+      // Nested child
+      if (item.children && Array.isArray(item.children)) {
         for (const child of item.children) {
-          if (typeof child === 'object' && child.children) {
-            const found = findParentGroup([child], target, child.id);
-            if (found) return found;
+          if (typeof child === 'object' && child.children && child.children.includes(target)) {
+            return item.label;
           }
         }
       }
     }
-    return null;
+    return "Home";
   };
 
+  // Navigate to a page
   const go = (item, groupId) => {
     setActive(item);
-    const parentId = groupId || findParentGroup(navItems, item);
-    if (parentId) {
-      setOpenGroups((g) => ({ ...g, [parentId]: true }));
+    if (groupId) {
+      setOpenGroups((g) => ({ ...g, [groupId]: true }));
     }
   };
 
+  // Add/remove sidebar items (admin only)
   const addMenuItem = (groupId) => {
     const name = prompt(`Add item to ${groupId}`);
     if (!name) return;
@@ -283,7 +291,6 @@ function DashboardLayout() {
     );
     setNavItems(updated);
     localStorage.setItem("navItems", JSON.stringify(updated));
-    logAction("sidebar_item_added", { groupId, name });
     toast.success(`Added "${name}"`);
   };
 
@@ -296,27 +303,18 @@ function DashboardLayout() {
     );
     setNavItems(updated);
     localStorage.setItem("navItems", JSON.stringify(updated));
-    logAction("sidebar_item_removed", { groupId, child });
     toast.error(`Removed "${child}"`);
   };
 
   const toggle = (id) =>
     setOpenGroups((g) => ({ ...g, [id]: !g[id] }));
 
-  const section =
-    navItems.find((n) => n.children?.includes(active))?.label || "Home";
-
-  const placeholder = PLACEHOLDER_DATA[active];
-  const PageComponent = placeholder
-    ? PlaceholderPage
-    : PAGES[active] || GenericPage;
-
-  const pageProps = placeholder
-    ? { ...placeholder }
-    : { name: active, section, go };
+  const section = findSection(navItems, active);
+  const Page = PAGES[active] || GenericPage;
 
   return (
     <div className="flex h-screen w-full bg-[var(--color-bg)] font-sans">
+      {/* Sidebar with overlay on mobile */}
       <div
         className={`
           fixed inset-y-0 left-0 z-30 transform transition-transform duration-300 ease-in-out
@@ -338,6 +336,7 @@ function DashboardLayout() {
         />
       </div>
 
+      {/* Overlay background when mobile sidebar is open */}
       {mobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-20 lg:hidden"
@@ -368,7 +367,7 @@ function DashboardLayout() {
               {active === "Home" ? (
                 <HomePage go={go} />
               ) : (
-                <PageComponent {...pageProps} />
+                <Page name={active} section={section} go={go} />
               )}
             </Suspense>
           </ErrorBoundary>
@@ -393,22 +392,24 @@ function PublicRoute() {
 export default function App() {
   return (
     <WebSocketProvider>
-      <Toaster
-        position="bottom-right"
-        toastOptions={{
-          style: {
-            background: "var(--color-panel)",
-            color: "var(--color-text)",
-            border: "1px solid var(--color-border)",
-            fontFamily: "var(--font-sans)",
-          },
-        }}
-      />
-      <Routes>
-        <Route path="/login" element={<PublicRoute />} />
-        <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      <AlertProvider>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "var(--color-panel)",
+              color: "var(--color-text)",
+              border: "1px solid var(--color-border)",
+              fontFamily: "var(--font-sans)",
+            },
+          }}
+        />
+        <Routes>
+          <Route path="/login" element={<PublicRoute />} />
+          <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </AlertProvider>
     </WebSocketProvider>
   );
 }

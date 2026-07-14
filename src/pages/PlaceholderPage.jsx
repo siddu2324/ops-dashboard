@@ -5,7 +5,7 @@ export default function PlaceholderPage({ title, description, actionText, onActi
     if (onAction) {
       onAction();
     } else {
-      toast.info(`"${title}" setup is not yet implemented.`);
+      toast(`"${title}" setup is not yet implemented.`);
     }
   };
 

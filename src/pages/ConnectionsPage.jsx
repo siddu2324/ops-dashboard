@@ -1,6 +1,56 @@
-import { useState } from "react";
-import { Search, ChevronDown, CheckCircle, PlusCircle, ExternalLink, Plus } from "lucide-react";
-import { plugins } from "../data/plugins";
+import { useState, useEffect } from "react";
+import {
+  Search,
+  ChevronDown,
+  CheckCircle,
+  PlusCircle,
+  ExternalLink,
+  Plus,
+  Settings,
+  X,
+  Save,
+} from "lucide-react";
+import { toast } from "react-hot-toast";
+
+// Initial plugin data
+const defaultPlugins = [
+  { id: 1, name: "Alertmanager", category: "Data Sources", installed: true },
+  { id: 2, name: "Azure Monitor", category: "Data Sources", installed: true },
+  { id: 3, name: "CloudWatch", category: "Data Sources", installed: true },
+  { id: 4, name: "Elasticsearch", category: "Data Sources", installed: true },
+  { id: 5, name: "Google Cloud Monitoring", category: "Data Sources", installed: true },
+  { id: 6, name: "Grafana Pyroscope", category: "Data Sources", installed: true },
+  { id: 7, name: "Graphite", category: "Data Sources", installed: true },
+  { id: 8, name: "InfluxDB", category: "Data Sources", installed: true },
+  { id: 9, name: "Jaeger", category: "Data Sources", installed: true },
+  { id: 10, name: "Loki", category: "Data Sources", installed: true },
+  { id: 11, name: "Microsoft SQL Server", category: "Data Sources", installed: true },
+  { id: 12, name: "MySQL", category: "Data Sources", installed: true },
+  { id: 13, name: "PostgreSQL", category: "Data Sources", installed: false },
+  { id: 14, name: "Prometheus", category: "Data Sources", installed: false },
+  { id: 15, name: "Tempo", category: "Data Sources", installed: false },
+  { id: 16, name: "Zabbix", category: "Data Sources", installed: false },
+  { id: 17, name: "Datadog", category: "Data Sources", installed: false },
+  { id: 18, name: "New Relic", category: "Data Sources", installed: false },
+  { id: 19, name: "Splunk", category: "Data Sources", installed: false },
+  { id: 20, name: "OpenSearch", category: "Data Sources", installed: false },
+];
+
+const STORAGE_KEY = "connections";
+
+const loadPlugins = () => {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {}
+  }
+  return defaultPlugins;
+};
+
+const savePlugins = (plugins) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(plugins));
+};
 
 const getPluginColor = (name) => {
   const colors = {
@@ -28,30 +78,183 @@ const getPluginColor = (name) => {
   return colors[name] || "#6B7280";
 };
 
+// ---------- Config Modal ----------
+const ConfigModal = ({ isOpen, onClose, plugin, onSave }) => {
+  const [config, setConfig] = useState({ url: "", apiKey: "", username: "", password: "" });
+
+  useEffect(() => {
+    if (plugin && plugin.config) {
+      setConfig(plugin.config);
+    } else {
+      setConfig({ url: "", apiKey: "", username: "", password: "" });
+    }
+  }, [plugin, isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!config.url.trim()) {
+      toast.error("URL is required");
+      return;
+    }
+    onSave(config);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-[var(--color-text)]">
+            Configure {plugin?.name}
+          </h3>
+          <button onClick={onClose} className="text-[var(--color-muted)] hover:text-[var(--color-text)]">
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[var(--color-muted)] text-sm mb-1">URL *</label>
+            <input
+              type="url"
+              value={config.url}
+              onChange={(e) => setConfig({ ...config, url: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              placeholder="https://your-server.com"
+            />
+          </div>
+          <div>
+            <label className="block text-[var(--color-muted)] text-sm mb-1">API Key</label>
+            <input
+              type="password"
+              value={config.apiKey}
+              onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              placeholder="API key (optional)"
+            />
+          </div>
+          <div>
+            <label className="block text-[var(--color-muted)] text-sm mb-1">Username</label>
+            <input
+              type="text"
+              value={config.username}
+              onChange={(e) => setConfig({ ...config, username: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              placeholder="Username"
+            />
+          </div>
+          <div>
+            <label className="block text-[var(--color-muted)] text-sm mb-1">Password</label>
+            <input
+              type="password"
+              value={config.password}
+              onChange={(e) => setConfig({ ...config, password: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              placeholder="Password"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-[var(--color-muted)] hover:text-[var(--color-text)]">
+              Cancel
+            </button>
+            <button type="submit" className="flex items-center gap-1 px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90">
+              <Save size={14} />
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ---------- Main Component ----------
 export default function ConnectionsPage() {
+  const [plugins, setPlugins] = useState([]);
+  const [filtered, setFiltered] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name");
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [selectedPlugin, setSelectedPlugin] = useState(null);
 
-  const filteredPlugins = plugins
-    .filter((p) => {
-      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesState =
-        stateFilter === "all" ||
-        (stateFilter === "installed" && p.installed) ||
-        (stateFilter === "updates" && p.installed);
-      return matchesSearch && matchesState;
-    })
-    .sort((a, b) => {
-      if (sortBy === "name") return a.name.localeCompare(b.name);
-      return 0;
-    });
+  // Load data
+  useEffect(() => {
+    const loaded = loadPlugins();
+    setPlugins(loaded);
+  }, []);
+
+  // Save
+  useEffect(() => {
+    if (plugins.length > 0) {
+      savePlugins(plugins);
+    }
+  }, [plugins]);
+
+  // Filter and sort
+  useEffect(() => {
+    let result = plugins;
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter((p) => p.name.toLowerCase().includes(term));
+    }
+    if (stateFilter !== "all") {
+      result = result.filter((p) =>
+        stateFilter === "installed" ? p.installed : !p.installed
+      );
+    }
+    if (sortBy === "name") {
+      result = result.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    setFiltered(result);
+  }, [searchTerm, stateFilter, sortBy, plugins]);
+
+  const handleInstall = (id) => {
+    setPlugins(
+      plugins.map((p) =>
+        p.id === id ? { ...p, installed: true, config: p.config || {} } : p
+      )
+    );
+    toast.success("Plugin installed");
+  };
+
+  const handleUninstall = (id) => {
+    if (window.confirm("Are you sure you want to uninstall this plugin?")) {
+      setPlugins(
+        plugins.map((p) =>
+          p.id === id ? { ...p, installed: false, config: undefined } : p
+        )
+      );
+      toast.success("Plugin uninstalled");
+    }
+  };
+
+  const handleConfigure = (plugin) => {
+    setSelectedPlugin(plugin);
+    setConfigModalOpen(true);
+  };
+
+  const handleSaveConfig = (config) => {
+    setPlugins(
+      plugins.map((p) =>
+        p.id === selectedPlugin.id ? { ...p, config } : p
+      )
+    );
+    toast.success(`Configuration saved for ${selectedPlugin.name}`);
+    setConfigModalOpen(false);
+    setSelectedPlugin(null);
+  };
+
+  const closeConfigModal = () => {
+    setConfigModalOpen(false);
+    setSelectedPlugin(null);
+  };
 
   return (
-    <div className="flex flex-col max-w-7xl mx-auto space-y-4">
-      {/* Header with "Add new connection" button */}
+    <div className="max-w-7xl mx-auto space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text)]">Connections</h1>
@@ -72,11 +275,10 @@ export default function ConnectionsPage() {
             placeholder="Search Grafana plugins"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-sm"
+            className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
           />
         </div>
 
-        {/* State filter */}
         <div className="relative">
           <button
             onClick={() => setShowStateDropdown(!showStateDropdown)}
@@ -108,7 +310,6 @@ export default function ConnectionsPage() {
           )}
         </div>
 
-        {/* Sort */}
         <div className="relative">
           <button
             onClick={() => setShowSortDropdown(!showSortDropdown)}
@@ -149,8 +350,8 @@ export default function ConnectionsPage() {
         </div>
       </div>
 
-      {/* Plugin grid or empty state */}
-      {filteredPlugins.length === 0 ? (
+      {/* Grid */}
+      {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center border border-[var(--color-border)] rounded-lg bg-[var(--color-panel)]">
           <div className="w-16 h-16 rounded-full bg-[var(--color-panel-alt)] border border-[var(--color-border)] flex items-center justify-center mb-4">
             <Search size={24} className="text-[var(--color-faint)]" />
@@ -162,10 +363,10 @@ export default function ConnectionsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredPlugins.map((plugin) => (
+          {filtered.map((plugin) => (
             <div
               key={plugin.id}
-              className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4 hover:border-[var(--color-accent)] hover:shadow-lg transition-all cursor-pointer group"
+              className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4 hover:border-[var(--color-accent)] hover:shadow-lg transition-all group"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -187,10 +388,32 @@ export default function ConnectionsPage() {
                   </span>
                 )}
               </div>
-              <div className="mt-3 flex justify-end">
-                <button className="text-xs text-[var(--color-accent)] opacity-0 group-hover:opacity-100 transition">
-                  {plugin.installed ? "Configure" : "Install"}
-                </button>
+              <div className="mt-3 flex justify-end gap-2">
+                {plugin.installed ? (
+                  <>
+                    <button
+                      onClick={() => handleConfigure(plugin)}
+                      className="text-xs text-[var(--color-accent)] hover:underline opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <Settings size={14} className="inline mr-1" />
+                      Configure
+                    </button>
+                    <button
+                      onClick={() => handleUninstall(plugin.id)}
+                      className="text-xs text-[var(--color-crit)] hover:underline opacity-0 group-hover:opacity-100 transition"
+                    >
+                      Uninstall
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => handleInstall(plugin.id)}
+                    className="text-xs text-[var(--color-accent)] hover:underline opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <Plus size={14} className="inline mr-1" />
+                    Install
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -211,6 +434,14 @@ export default function ConnectionsPage() {
         </div>
         <span className="text-xs">No updates available</span>
       </div>
+
+      {/* Config Modal */}
+      <ConfigModal
+        isOpen={configModalOpen}
+        onClose={closeConfigModal}
+        plugin={selectedPlugin}
+        onSave={handleSaveConfig}
+      />
     </div>
   );
 }

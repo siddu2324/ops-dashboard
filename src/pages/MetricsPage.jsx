@@ -10,6 +10,9 @@ import {
   Activity,
   Filter,
   X,
+  Play,
+  Save,
+  History,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
@@ -24,8 +27,8 @@ import {
 } from "recharts";
 import TimePicker from "../components/common/TimePicker";
 
-// ------------------- Mock Data -------------------
-const allMetrics = [
+// ---------- Mock Metric Data ----------
+const metricNames = [
   "go_gc_cycles_automatic_gc_cycles_total",
   "go_gc_cycles_forced_gc_cycles_total",
   "go_gc_cycles_total_gc_cycles_total",
@@ -157,10 +160,10 @@ const allMetrics = [
 ];
 
 const prefixData = [
-  { prefix: "node", count: 286 },
-  { prefix: "prometheus", count: 229 },
-  { prefix: "tempo", count: 123 },
   { prefix: "go", count: 74 },
+  { prefix: "prometheus", count: 229 },
+  { prefix: "node", count: 286 },
+  { prefix: "tempo", count: 123 },
   { prefix: "tempodb", count: 23 },
   { prefix: "process", count: 9 },
   { prefix: "net", count: 6 },
@@ -205,38 +208,39 @@ const groupByLabels = [
   "broadcast", "call", "cause",
 ];
 
-// Generate random data for a specific metric
-const generateMetricData = (metricName, points = 20) => {
-  const now = Date.now();
-  // Use the metric name as seed to get consistent variation
-  const seed = metricName.length;
-  return Array.from({ length: points }, (_, i) => {
-    const time = new Date(now - (points - i) * 60000);
-    const base = Math.sin(i / 2 + seed) * 30 + 50;
-    const value = Math.max(0, Math.floor(base + (Math.random() - 0.5) * 20));
-    return {
-      time: time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      value: value,
-    };
-  });
-};
-
-// A color palette for multiple metrics
+// ---------- Color palette ----------
 const COLORS = [
   "#22D3EE", "#F87171", "#FBBF24", "#34D399", "#A78BFA",
   "#F472B6", "#60A5FA", "#F59E0B", "#14B8A6", "#8B5CF6",
   "#EC4899", "#6366F1", "#10B981", "#F97316", "#06B6D4",
 ];
 
+// ---------- Chart data generator ----------
+const generateMetricData = (metricName, points = 30) => {
+  const now = Date.now();
+  const seed = metricName.length;
+  return Array.from({ length: points }, (_, i) => {
+    const time = new Date(now - (points - i) * 60000);
+    const base = Math.sin(i / 3 + seed) * 30 + 50 + (Math.random() * 10);
+    const value = Math.max(0, Math.floor(base + (Math.random() - 0.5) * 20));
+    return {
+      time: time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      [metricName]: value,
+    };
+  });
+};
+
+// ---------- Main Component ----------
 export default function MetricsPage() {
-  // State
   const [dataSource, setDataSource] = useState("prometheus");
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [selectedMetrics, setSelectedMetrics] = useState([]);
   const [showFilters, setShowFilters] = useState(true);
+  const [query, setQuery] = useState("");
+  const [queryHistory, setQueryHistory] = useState([]);
 
-  // Filter groups open states
+  // Filter groups
   const [rulesOpen, setRulesOpen] = useState(true);
   const [prefixOpen, setPrefixOpen] = useState(true);
   const [suffixOpen, setSuffixOpen] = useState(true);
@@ -253,69 +257,88 @@ export default function MetricsPage() {
   const [selectedGroupBy, setSelectedGroupBy] = useState(null);
   const [groupBySearch, setGroupBySearch] = useState("");
 
-  // Chart data for each selected metric
-  const [chartDataMap, setChartDataMap] = useState({});
+  // Chart data
+  const [chartData, setChartData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Auto-refresh chart data every 5 seconds
+  // ---------- FIXED: Initialize with default metric ----------
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newMap = {};
-      selectedMetrics.forEach((metric) => {
-        newMap[metric] = generateMetricData(metric);
-      });
-      setChartDataMap(newMap);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [selectedMetrics]);
+    if (selectedMetrics.length === 0) {
+      const defaultMetric = "go_goroutines";
+      setSelectedMetrics([defaultMetric]);
+      setQuery(defaultMetric);
+      setChartData(generateMetricData(defaultMetric));
+    }
+  }, [selectedMetrics.length]);
 
-  // When selectedMetrics changes, generate initial data
-  useEffect(() => {
-    const newMap = {};
-    selectedMetrics.forEach((metric) => {
-      newMap[metric] = generateMetricData(metric);
-    });
-    setChartDataMap(newMap);
-  }, [selectedMetrics]);
+  // Run query
+  const runQuery = () => {
+    if (!query.trim()) {
+      toast.error("Please enter a query");
+      return;
+    }
+    setIsLoading(true);
+    setTimeout(() => {
+      const words = query.split(/\s+/);
+      const metricName = words.find(w => metricNames.includes(w)) || "result";
+      const data = generateMetricData(metricName);
+      setChartData(data);
+      setSelectedMetrics([metricName]);
+      setQueryHistory((prev) => [query, ...prev.slice(0, 9)]);
+      toast.success(`Query executed: ${query}`);
+      setIsLoading(false);
+    }, 500);
+  };
 
-  // Filter metrics based on search, prefixes, suffixes, rules
-  const filteredMetrics = allMetrics.filter((m) => {
-    // Search filter
+  // Handle time change
+  const handleTimeChange = (time) => {
+    toast.success(`Time range updated: ${time.range || time.from + " → " + time.to}`);
+  };
+
+  // Filter metrics
+  const filteredMetrics = metricNames.filter((m) => {
     if (searchTerm && !m.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-
-    // Prefix filter
     if (selectedPrefixes.length > 0) {
-      const matchesPrefix = selectedPrefixes.some((p) => m.startsWith(p));
-      if (!matchesPrefix) return false;
+      const matches = selectedPrefixes.some((p) => m.startsWith(p));
+      if (!matches) return false;
     }
-
-    // Suffix filter
     if (selectedSuffixes.length > 0) {
-      const matchesSuffix = selectedSuffixes.some((s) => m.endsWith(s));
-      if (!matchesSuffix) return false;
+      const matches = selectedSuffixes.some((s) => m.endsWith(s));
+      if (!matches) return false;
     }
-
-    // Rules filter (mock – we'll just use a simple rule: if nonRules is checked, show all; if recordingRules is checked, show specific ones)
-    // For demo, if recordingRules is checked and nonRules is false, show only metrics with "rule" in name
-    if (rulesSelection.recordingRules && !rulesSelection.nonRules) {
-      return m.includes("rule");
-    }
-    if (!rulesSelection.recordingRules && rulesSelection.nonRules) {
-      return true; // all
-    }
-    // Both or neither: show all
     return true;
   });
 
-  // Toggle metric selection
   const toggleMetricSelection = (metric) => {
-    setSelectedMetrics((prev) =>
-      prev.includes(metric)
-        ? prev.filter((m) => m !== metric)
-        : [...prev, metric]
-    );
+    setSelectedMetrics((prev) => {
+      const isSelected = prev.includes(metric);
+      let newSelected;
+      if (isSelected) {
+        newSelected = prev.filter((m) => m !== metric);
+        // Remove metric from chart data
+        const updated = chartData.map((point) => {
+          const { [metric]: removed, ...rest } = point;
+          return rest;
+        });
+        setChartData(updated);
+      } else {
+        newSelected = [...prev, metric];
+        // Add metric to chart data
+        const newData = generateMetricData(metric);
+        if (chartData.length > 0) {
+          const merged = chartData.map((point, i) => ({
+            ...point,
+            [metric]: newData[i]?.[metric] || 0,
+          }));
+          setChartData(merged);
+        } else {
+          setChartData(newData);
+        }
+      }
+      return newSelected;
+    });
   };
 
-  // Clear all selections (metrics + filters)
   const clearAllFilters = () => {
     setSelectedPrefixes([]);
     setSelectedSuffixes([]);
@@ -323,14 +346,12 @@ export default function MetricsPage() {
     setSelectedGroupBy(null);
     setRulesSelection({ nonRules: true, recordingRules: false });
     setSelectedMetrics([]);
+    setQuery("");
+    setChartData([]);
     toast.success("All filters cleared");
   };
 
-  const handleTimeChange = (time) => {
-    toast.success(`Time range updated: ${time.range || time.from + " → " + time.to}`);
-  };
-
-  // Filter group component
+  // Filter group toggle
   const FilterGroup = ({ title, open, onToggle, children }) => (
     <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
       <button
@@ -344,21 +365,8 @@ export default function MetricsPage() {
     </div>
   );
 
-  // Prepare chart data – combine all selected metrics into one data array
-  const chartDataPoints = selectedMetrics.length > 0 ? selectedMetrics[0] : [];
-  const combinedData = [];
-  if (selectedMetrics.length > 0) {
-    const firstMetric = selectedMetrics[0];
-    const dataForFirst = chartDataMap[firstMetric] || [];
-    dataForFirst.forEach((point, idx) => {
-      const entry = { time: point.time };
-      selectedMetrics.forEach((metric) => {
-        const data = chartDataMap[metric] || [];
-        entry[metric] = data[idx]?.value || 0;
-      });
-      combinedData.push(entry);
-    });
-  }
+  // Prepare chart data
+  const chartDataPoints = chartData.length > 0 ? chartData : [];
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
@@ -396,6 +404,56 @@ export default function MetricsPage() {
             className="px-2 py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent w-32"
           />
         </div>
+      </div>
+
+      {/* Query builder */}
+      <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--color-muted)] font-mono">PromQL</span>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && runQuery()}
+              className="w-full pl-14 pr-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] text-sm focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent font-mono"
+              placeholder="rate(go_goroutines[5m])"
+            />
+          </div>
+          <button
+            onClick={runQuery}
+            disabled={isLoading}
+            className="flex items-center gap-1 px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition disabled:opacity-50"
+          >
+            <Play size={16} />
+            Run
+          </button>
+          <button
+            onClick={() => toast.info("Save query as dashboard")}
+            className="p-2 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-panel-alt)] transition text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          >
+            <Save size={16} />
+          </button>
+          <button
+            onClick={() => toast.info("Query history")}
+            className="p-2 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-panel-alt)] transition text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          >
+            <History size={16} />
+          </button>
+        </div>
+        {queryHistory.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {queryHistory.map((q, i) => (
+              <button
+                key={i}
+                onClick={() => { setQuery(q); runQuery(); }}
+                className="text-xs bg-[var(--color-panel-alt)] px-2 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)]"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Search and view toggles */}
@@ -448,10 +506,9 @@ export default function MetricsPage() {
         </div>
       </div>
 
-      {/* Filter panel (collapsible groups) */}
+      {/* Filters panel */}
       {showFilters && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {/* Rules Filters */}
           <FilterGroup title="Rules filters" open={rulesOpen} onToggle={() => setRulesOpen(!rulesOpen)}>
             <div className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
               <span>{selectedPrefixes.length + selectedSuffixes.length} selected</span>
@@ -465,7 +522,7 @@ export default function MetricsPage() {
                   onChange={() => setRulesSelection({ ...rulesSelection, nonRules: !rulesSelection.nonRules })}
                   className="rounded border-[var(--color-border)] accent-[var(--color-accent)]"
                 />
-                <span className="text-[var(--color-text)]">Non-rules metrics (766)</span>
+                <span className="text-[var(--color-text)]">Non-rules metrics ({metricNames.length})</span>
               </label>
               <label className="flex items-center gap-2 text-xs cursor-pointer">
                 <input
@@ -479,7 +536,6 @@ export default function MetricsPage() {
             </div>
           </FilterGroup>
 
-          {/* Prefix Filters */}
           <FilterGroup title="Prefix filters" open={prefixOpen} onToggle={() => setPrefixOpen(!prefixOpen)}>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -521,7 +577,6 @@ export default function MetricsPage() {
             </div>
           </FilterGroup>
 
-          {/* Suffix Filters */}
           <FilterGroup title="Suffix filters" open={suffixOpen} onToggle={() => setSuffixOpen(!suffixOpen)}>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -563,7 +618,6 @@ export default function MetricsPage() {
             </div>
           </FilterGroup>
 
-          {/* Recent Metrics */}
           <FilterGroup title="Recent metrics filters" open={recentOpen} onToggle={() => setRecentOpen(!recentOpen)}>
             <div className="flex flex-wrap gap-1">
               {timeRanges.map((range) => (
@@ -582,7 +636,6 @@ export default function MetricsPage() {
             </div>
           </FilterGroup>
 
-          {/* Group by labels */}
           <FilterGroup title="Group by labels" open={groupByOpen} onToggle={() => setGroupByOpen(!groupByOpen)}>
             <div className="relative">
               <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--color-faint)]" />
@@ -618,8 +671,9 @@ export default function MetricsPage() {
         </div>
       )}
 
-      {/* Two‑column layout: Metrics list + Chart */}
+      {/* Main layout: Metrics list + Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Metrics list */}
         <div className="lg:col-span-1 bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg overflow-hidden">
           <div className="px-3 py-2 border-b border-[var(--color-border)] text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">
             Metrics
@@ -651,6 +705,7 @@ export default function MetricsPage() {
           </div>
         </div>
 
+        {/* Chart area */}
         <div className="lg:col-span-2 space-y-3">
           <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">
@@ -659,15 +714,16 @@ export default function MetricsPage() {
                 <span className="text-xs text-[var(--color-muted)]">{selectedMetrics.length} metrics selected</span>
               )}
             </div>
-            {selectedMetrics.length === 0 ? (
+            {/* FIXED: Always show chart if there's data OR a metric is selected */}
+            {chartDataPoints.length === 0 && selectedMetrics.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-[var(--color-muted)]">
                 <Activity size={32} className="mb-2" />
-                <span className="text-sm">Select a metric from the list to view its chart</span>
+                <span className="text-sm">Select a metric or run a query</span>
               </div>
             ) : (
               <div style={{ height: 300 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={combinedData}>
+                  <AreaChart data={chartDataPoints.length > 0 ? chartDataPoints : generateMetricData("go_goroutines")}>
                     <defs>
                       {selectedMetrics.map((metric, idx) => (
                         <linearGradient key={metric} id={`grad-${metric}`} x1="0" y1="0" x2="0" y2="1">

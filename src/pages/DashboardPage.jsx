@@ -14,49 +14,68 @@ import Card from "../components/common/Card";
 import Stat from "../components/common/Stat";
 import StatusDot from "../components/common/StatusDot";
 import ChartTooltip from "../components/common/ChartTooltip";
+import { useAlerts } from "../context/AlertContext";
 import { cpuSeries } from "../data/cpuSeries";
 import { reqSeries } from "../data/reqSeries";
-import { useAlertPolling } from "../hooks/useAlertPolling";
-import { initialEvents, generateNewEvent } from "../data/events";
 
-// Severity badge colors
-const severityColors = {
-  Critical: "bg-[var(--color-crit)] text-white",
-  High: "bg-[var(--color-crit)] text-white",
-  Medium: "bg-[var(--color-warn)] text-[#06222A]",
-  Low: "bg-[var(--color-ok)] text-[#06222A]",
+// ---------- CONSTANTS ----------
+const EVENT_NAMES = [
+  "Error: 401",
+  "RequestError",
+  "AWSSecurityTokenServiceException",
+  "QueryFailedException",
+  "Database connection timeout",
+  "Memory limit exceeded",
+  "SSL certificate expired",
+  "Disk space warning",
+];
+const EVENT_TYPES = ["Exceptions", "Timeout", "Resource", "Security", "Network", "Authentication"];
+const SEVERITIES = ["High", "Medium", "Low", "Critical"];
+
+// Generate mock events
+const generateEvents = (count = 8) => {
+  const now = Date.now();
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    name: EVENT_NAMES[i % EVENT_NAMES.length],
+    type: EVENT_TYPES[i % EVENT_TYPES.length],
+    severity: SEVERITIES[i % SEVERITIES.length],
+    count: Math.floor(1000 + Math.random() * 50000),
+    lastTriggered: new Date(now - Math.random() * 3600000).toISOString(),
+  }));
 };
 
-export default function DashboardPage() {
-  const { alerts, newAlertCount, resetNewAlertCount } = useAlertPolling(5000);
-  const [events, setEvents] = useState(initialEvents);
+export default function DashboardPage({ go }) {
+  const { activeAlertList, activeAlertCount, newAlertCount, resetNewAlertCount } = useAlerts();
+  const [events, setEvents] = useState(generateEvents(8));
 
-  // Auto-refresh events every 10 seconds
+  useEffect(() => {
+    resetNewAlertCount();
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
-      const newEvent = generateNewEvent();
       setEvents((prev) => {
-        // Check if event already exists, if so update count
-        const existingIdx = prev.findIndex(e => e.name === newEvent.name);
-        if (existingIdx !== -1) {
-          const updated = [...prev];
-          updated[existingIdx] = {
-            ...updated[existingIdx],
-            count: updated[existingIdx].count + Math.floor(Math.random() * 100),
-            lastTriggered: newEvent.lastTriggered,
-          };
-          return updated;
-        }
-        return [newEvent, ...prev].slice(0, 10);
+        const newEvent = {
+          id: Date.now(),
+          name: EVENT_NAMES[Math.floor(Math.random() * EVENT_NAMES.length)],
+          type: EVENT_TYPES[Math.floor(Math.random() * EVENT_TYPES.length)],
+          severity: SEVERITIES[Math.floor(Math.random() * SEVERITIES.length)],
+          count: Math.floor(1000 + Math.random() * 50000),
+          lastTriggered: new Date().toISOString(),
+        };
+        return [newEvent, ...prev.slice(0, 7)];
       });
     }, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Reset count when component mounts
-  useEffect(() => {
-    resetNewAlertCount();
-  }, []);
+  // Use the activeAlertList array for recent alerts
+  const recentAlerts = activeAlertList.slice(-5).reverse();
+
+  const handleStatClick = (page, groupId) => {
+    go(page, groupId);
+  };
 
   return (
     <div className="grid gap-4">
@@ -64,13 +83,33 @@ export default function DashboardPage() {
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
         <Stat
           label="Active alerts"
-          value={alerts.length}
+          value={activeAlertCount}
           delta={`${newAlertCount} new`}
           tone="var(--color-crit)"
+          onClick={() => handleStatClick("Active notifications", "alerting")}
         />
-        <Stat label="Hosts up" value="248" unit="/ 251" delta="99.2% fleet" />
-        <Stat label="p95 latency" value="412" unit="ms" delta="-8% vs 24h" />
-        <Stat label="Error rate" value="0.42" unit="%" delta="+0.11 pt" tone="var(--color-warn)" />
+        <Stat
+          label="Hosts up"
+          value="248"
+          unit="/ 251"
+          delta="99.2% fleet"
+          onClick={() => handleStatClick("Servers", "infrastructure")}
+        />
+        <Stat
+          label="p95 latency"
+          value="412"
+          unit="ms"
+          delta="-8% vs 24h"
+          onClick={() => handleStatClick("Metrics", "monitoring")}
+        />
+        <Stat
+          label="Error rate"
+          value="0.42"
+          unit="%"
+          delta="+0.11 pt"
+          tone="var(--color-warn)"
+          onClick={() => handleStatClick("Logs", "monitoring")}
+        />
       </div>
 
       {/* Charts */}
@@ -110,61 +149,70 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Alerts */}
+      {/* Recent Alerts */}
       <Card title="Recent alerts" right={<span className="text-xs text-[var(--color-muted)]">Live</span>}>
-        <div className="grid gap-2">
-          {alerts.map((a, i) => (
-            <div key={i} className="flex items-center gap-3 py-1">
-              <StatusDot state={a.sev} />
-              <span className="text-[var(--color-text)] text-sm flex-1">{a.name}</span>
-              <span className="text-[var(--color-muted)] text-xs">{a.src}</span>
-              <span className="font-mono text-[var(--color-faint)] text-xs w-9 text-right">{a.age}</span>
-            </div>
-          ))}
-        </div>
+        {recentAlerts.length === 0 ? (
+          <div className="text-center py-4 text-[var(--color-muted)] text-sm">No recent alerts</div>
+        ) : (
+          <div className="grid gap-2">
+            {recentAlerts.map((a) => (
+              <div key={a.id} className="flex items-center gap-3 py-1">
+                <StatusDot state={a.state === "active" ? "crit" : "ok"} />
+                <span className="text-[var(--color-text)] text-sm flex-1">{a.grafana_folder}</span>
+                <span className="text-[var(--color-muted)] text-xs">{a.contactPoint}</span>
+                <span className="font-mono text-[var(--color-faint)] text-xs w-9 text-right">
+                  {a.stateDuration}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
-      {/* Recent Events Table */}
-      <Card 
-        title="Recent Events" 
-        right={<span className="text-xs text-[var(--color-muted)]">Auto-refresh every 10s</span>}
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-[var(--color-border)] text-[var(--color-muted)] text-xs uppercase tracking-wider">
-                <th className="py-2 px-3 font-medium">Event</th>
-                <th className="py-2 px-3 font-medium">Type</th>
-                <th className="py-2 px-3 font-medium">Severity</th>
-                <th className="py-2 px-3 font-medium text-right">Count</th>
-                <th className="py-2 px-3 font-medium">Last Triggered</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((event) => (
-                <tr key={event.id} className="border-b border-[var(--color-border)] hover:bg-[var(--color-panel-alt)] transition-colors">
-                  <td className="py-2 px-3 text-[var(--color-text)] font-mono text-xs">
-                    {event.name}
-                  </td>
-                  <td className="py-2 px-3 text-[var(--color-muted)] text-xs">
-                    {event.type}
-                  </td>
-                  <td className="py-2 px-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${severityColors[event.severity] || severityColors.Medium}`}>
-                      {event.severity}
-                    </span>
-                  </td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono text-sm">
-                    {event.count.toLocaleString()}
-                  </td>
-                  <td className="py-2 px-3 text-[var(--color-faint)] text-xs">
-                    {new Date(event.lastTriggered).toLocaleString()}
-                  </td>
+      {/* Recent Events */}
+      <Card title="Recent Events" right={<span className="text-xs text-[var(--color-muted)]">Auto-refresh every 10s</span>}>
+        {events.length === 0 ? (
+          <div className="text-center py-4 text-[var(--color-muted)] text-sm">No recent events</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[var(--color-border)] text-[var(--color-muted)] text-xs uppercase tracking-wider">
+                  <th className="py-2 px-3 font-medium">Event</th>
+                  <th className="py-2 px-3 font-medium">Type</th>
+                  <th className="py-2 px-3 font-medium">Severity</th>
+                  <th className="py-2 px-3 font-medium text-right">Count</th>
+                  <th className="py-2 px-3 font-medium">Last Triggered</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {events.map((event) => (
+                  <tr key={event.id} className="border-b border-[var(--color-border)] hover:bg-[var(--color-panel-alt)] transition-colors">
+                    <td className="py-2 px-3 text-[var(--color-text)] font-mono text-xs">{event.name}</td>
+                    <td className="py-2 px-3 text-[var(--color-muted)] text-xs">{event.type}</td>
+                    <td className="py-2 px-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        event.severity === "High" || event.severity === "Critical"
+                          ? "bg-[var(--color-crit)] text-white"
+                          : event.severity === "Medium"
+                          ? "bg-[var(--color-warn)] text-[#06222A]"
+                          : "bg-[var(--color-ok)] text-[#06222A]"
+                      }`}>
+                        {event.severity}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono text-sm">
+                      {event.count.toLocaleString()}
+                    </td>
+                    <td className="py-2 px-3 text-[var(--color-faint)] text-xs">
+                      {new Date(event.lastTriggered).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );

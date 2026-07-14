@@ -39,9 +39,9 @@ export const NAV = [
     id: "operations",
     label: "Operations",
     icon: Siren,
-    children: ["Incidents", "RCA", "Automation"], // removed "Alerting"
+    children: ["Incidents", "RCA", "Automation"],
   },
-  // ---- NEW Alerting section ----
+  // ---- Alerting section ----
   {
     id: "alerting",
     label: "Alerting",
@@ -51,7 +51,7 @@ export const NAV = [
       "Notification configuration",
       "Silences",
       "Active notifications",
-      "Settings", // ⚠️ Will conflict with Admin "Settings" – consider renaming to "Alert Settings"
+      "Alerting Settings",
     ],
   },
   {
@@ -79,7 +79,7 @@ export const NAV = [
         children: [
           "Statistics and licensing",
           "Default preferences",
-          "Settings", // 👈 This will be overridden by Alerting Settings if the same key is used
+          "Settings",
           "Organizations",
           "Migrate to Grafana Cloud",
           "Provisioning",
@@ -87,9 +87,9 @@ export const NAV = [
       },
       {
         id: "plugins-data",
-        label: "Plugins and data",
+        label: "Plugins and data",   // ✅ Contains Correlations
         icon: Database,
-        children: ["Plugins", "Correlations"],
+        children: ["Plugins", "Correlations"], // ✅ Correct
       },
       {
         id: "users-access",
