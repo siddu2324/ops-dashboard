@@ -6,16 +6,10 @@ import { defaultDashboards, CURRENT_VERSION } from "../data/defaultDashboards";
 const STORAGE_KEY = "dashboards";
 const VERSION_KEY = "dashboards_version";
 
-// ---- Load with version check ----
+// ---- Load with version check and removal ----
 const loadDashboards = () => {
   const stored = localStorage.getItem(STORAGE_KEY);
   const storedVersion = parseInt(localStorage.getItem(VERSION_KEY) || "0");
-
-  if (stored && storedVersion === CURRENT_VERSION) {
-    try {
-      return JSON.parse(stored);
-    } catch {}
-  }
 
   let existing = [];
   if (stored) {
@@ -24,15 +18,28 @@ const loadDashboards = () => {
     } catch {}
   }
 
-  // Merge: add default dashboards that don't already exist (by name)
-  const merged = [...existing];
-  const existingNames = new Set(existing.map(d => d.name));
+  // Get current default names and IDs
+  const defaultNames = new Set(defaultDashboards.map(d => d.name));
+  const maxDefaultId = Math.max(...defaultDashboards.map(d => d.id));
+
+  // Filter existing: keep custom dashboards (id > maxDefaultId) OR default dashboards that still exist
+  const filteredExisting = existing.filter(d => {
+    if (d.id <= maxDefaultId) {
+      return defaultNames.has(d.name);
+    }
+    return true; // keep custom
+  });
+
+  // Merge: add any missing default dashboards (by name)
+  const existingNames = new Set(filteredExisting.map(d => d.name));
+  const merged = [...filteredExisting];
   defaultDashboards.forEach(def => {
     if (!existingNames.has(def.name)) {
       merged.push(def);
     }
   });
 
+  // Save merged and version
   localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
   localStorage.setItem(VERSION_KEY, String(CURRENT_VERSION));
   return merged;
@@ -84,7 +91,6 @@ export default function DashboardListPage({ go }) {
           <button
             onClick={handleExportCode}
             className="flex items-center gap-1 px-3 py-1.5 border border-[var(--color-border)] text-[var(--color-muted)] rounded-lg hover:bg-[var(--color-panel-alt)] transition text-sm"
-            title="Export as default code for sharing"
           >
             <Code2 size={14} />
             Export as Code

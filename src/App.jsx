@@ -47,6 +47,16 @@ const TeamsPage = lazy(() => import("./pages/TeamsPage"));
 const CorrelationsPage = lazy(() => import("./pages/CorrelationsPage"));
 const AuthenticationPage = lazy(() => import("./pages/AuthenticationPage"));
 
+// ---- Dashboard drill‑down pages ----
+const OracleMonitoring = lazy(() => import("./pages/dashboards/OracleMonitoring"));
+const OracleRealTimeOSPerformance = lazy(() => import("./pages/dashboards/OracleRealTimeOSPerformance"));
+const OracleHistoricalPerformance = lazy(() => import("./pages/dashboards/OracleHistoricalPerformance"));
+const FirewallDashboard = lazy(() => import("./pages/dashboards/FirewallDashboard"));
+const FirewallRealTimeInfo = lazy(() => import("./pages/dashboards/FirewallRealTimeInfo"));
+const FirewallRealTimeInterfaceStatus = lazy(() => import("./pages/dashboards/FirewallRealTimeInterfaceStatus"));
+const FirewallRealTimeService = lazy(() => import("./pages/dashboards/FirewallRealTimeService"));
+const FirewallHistoricalPerformance = lazy(() => import("./pages/dashboards/FirewallHistoricalPerformance"));
+
 // ---- Alerting pages ----
 const AlertRulesPage = lazy(() => import("./pages/AlertRulesPage"));
 const NotificationConfigPage = lazy(() => import("./pages/NotificationConfigPage"));
@@ -202,6 +212,16 @@ const PAGES = {
   Silences: SilencesPage,
   "Active notifications": ActiveNotificationsPage,
   "Alerting Settings": AlertingSettingsPage,
+  // ---- Oracle drill‑down pages ----
+  "Oracle Monitoring": OracleMonitoring,
+  "Real-time_OS Performance": OracleRealTimeOSPerformance,
+  "Oracle_Historical Performance_Dashboard": OracleHistoricalPerformance,
+  // ---- Firewall drill‑down pages ----
+  "Firewall Dashboard": FirewallDashboard,
+  "Real-time_Firewall info": FirewallRealTimeInfo,
+  "Real-time_Firewall Interface status": FirewallRealTimeInterfaceStatus,
+  "Real-time_Firewall Service": FirewallRealTimeService,
+  "Firewall_Historical Performance": FirewallHistoricalPerformance,
 };
 
 // ---- Fallback UI ----
@@ -376,7 +396,8 @@ function DashboardLayout() {
               {active === "Home" ? (
                 <HomePage go={go} />
               ) : (
-                <Page name={active} section={section} go={go} />
+                // ✅ Pass `active` as a prop to the rendered page
+                <Page name={active} section={section} go={go} active={active} />
               )}
             </Suspense>
           </ErrorBoundary>

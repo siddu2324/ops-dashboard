@@ -18,6 +18,19 @@ import { useAlerts } from "../context/AlertContext";
 import { cpuSeries } from "../data/cpuSeries";
 import { reqSeries } from "../data/reqSeries";
 import MemoryUtilizationReport from "./dashboards/MemoryUtilizationReport";
+import MemoryUtilizationReportLinux from "./dashboards/MemoryUtilizationReportLinux";
+import CpuLoadReportWindows from "./dashboards/CpuLoadReportWindows";
+import CpuLoadReportLinux from "./dashboards/CpuLoadReportLinux";
+import DiskUtilizationReportWindows from "./dashboards/DiskUtilizationReportWindows";
+import DiskUtilizationReportLinux from "./dashboards/DiskUtilizationReportLinux";
+import OracleMonitoring from "./dashboards/OracleMonitoring";
+import OracleRealTimeOSPerformance from "./dashboards/OracleRealTimeOSPerformance";
+import OracleHistoricalPerformance from "./dashboards/OracleHistoricalPerformance";
+import FirewallDashboard from "./dashboards/FirewallDashboard";
+import FirewallRealTimeInfo from "./dashboards/FirewallRealTimeInfo";
+import FirewallRealTimeInterfaceStatus from "./dashboards/FirewallRealTimeInterfaceStatus";
+import FirewallRealTimeService from "./dashboards/FirewallRealTimeService";
+import FirewallHistoricalPerformance from "./dashboards/FirewallHistoricalPerformance";
 
 // ---------- Constants ----------
 const EVENT_NAMES = [
@@ -75,20 +88,12 @@ const DefaultDashboardContent = () => {
 
   return (
     <div className="grid gap-4">
-      {/* Stats */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
-        <Stat
-          label="Active alerts"
-          value={activeAlertCount}
-          delta={`${newAlertCount} new`}
-          tone="var(--color-crit)"
-        />
+        <Stat label="Active alerts" value={activeAlertCount} delta={`${newAlertCount} new`} tone="var(--color-crit)" />
         <Stat label="Hosts up" value="248" unit="/ 251" delta="99.2% fleet" />
         <Stat label="p95 latency" value="412" unit="ms" delta="-8% vs 24h" />
         <Stat label="Error rate" value="0.42" unit="%" delta="+0.11 pt" tone="var(--color-warn)" />
       </div>
-
-      {/* Charts */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
         <Card title="Fleet CPU · avg %">
           <div style={{ height: 200 }}>
@@ -109,7 +114,6 @@ const DefaultDashboardContent = () => {
             </ResponsiveContainer>
           </div>
         </Card>
-
         <Card title="Requests / min">
           <div style={{ height: 200 }}>
             <ResponsiveContainer>
@@ -124,32 +128,22 @@ const DefaultDashboardContent = () => {
           </div>
         </Card>
       </div>
-
-      {/* Recent Alerts */}
       <Card title="Recent alerts" right={<span className="text-xs text-[var(--color-muted)]">Live</span>}>
-        {recentAlerts.length === 0 ? (
-          <div className="text-center py-4 text-[var(--color-muted)] text-sm">No recent alerts</div>
-        ) : (
+        {recentAlerts.length === 0 ? <div className="text-center py-4 text-[var(--color-muted)] text-sm">No recent alerts</div> :
           <div className="grid gap-2">
             {recentAlerts.map((a) => (
               <div key={a.id} className="flex items-center gap-3 py-1">
                 <StatusDot state={a.state === "active" ? "crit" : "ok"} />
                 <span className="text-[var(--color-text)] text-sm flex-1">{a.grafana_folder}</span>
                 <span className="text-[var(--color-muted)] text-xs">{a.contactPoint}</span>
-                <span className="font-mono text-[var(--color-faint)] text-xs w-9 text-right">
-                  {a.stateDuration}
-                </span>
+                <span className="font-mono text-[var(--color-faint)] text-xs w-9 text-right">{a.stateDuration}</span>
               </div>
             ))}
           </div>
-        )}
+        }
       </Card>
-
-      {/* Recent Events */}
       <Card title="Recent Events" right={<span className="text-xs text-[var(--color-muted)]">Auto-refresh every 10s</span>}>
-        {events.length === 0 ? (
-          <div className="text-center py-4 text-[var(--color-muted)] text-sm">No recent events</div>
-        ) : (
+        {events.length === 0 ? <div className="text-center py-4 text-[var(--color-muted)] text-sm">No recent events</div> :
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
@@ -167,28 +161,18 @@ const DefaultDashboardContent = () => {
                     <td className="py-2 px-3 text-[var(--color-text)] font-mono text-xs">{event.name}</td>
                     <td className="py-2 px-3 text-[var(--color-muted)] text-xs">{event.type}</td>
                     <td className="py-2 px-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        event.severity === "High" || event.severity === "Critical"
-                          ? "bg-[var(--color-crit)] text-white"
-                          : event.severity === "Medium"
-                          ? "bg-[var(--color-warn)] text-[#06222A]"
-                          : "bg-[var(--color-ok)] text-[#06222A]"
-                      }`}>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${event.severity === "High" || event.severity === "Critical" ? "bg-[var(--color-crit)] text-white" : event.severity === "Medium" ? "bg-[var(--color-warn)] text-[#06222A]" : "bg-[var(--color-ok)] text-[#06222A]"}`}>
                         {event.severity}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono text-sm">
-                      {event.count.toLocaleString()}
-                    </td>
-                    <td className="py-2 px-3 text-[var(--color-faint)] text-xs">
-                      {new Date(event.lastTriggered).toLocaleString()}
-                    </td>
+                    <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono text-sm">{event.count.toLocaleString()}</td>
+                    <td className="py-2 px-3 text-[var(--color-faint)] text-xs">{new Date(event.lastTriggered).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
+        }
       </Card>
     </div>
   );
@@ -196,40 +180,50 @@ const DefaultDashboardContent = () => {
 
 // ---------- Dashboard Component Mapping ----------
 const dashboardComponents = {
-  "Memory Utilization": MemoryUtilizationReport,
+  "Memory Utilization Report - Windows": MemoryUtilizationReport,
+  "Memory Utilization Report - Linux": MemoryUtilizationReportLinux,
+  "CPU Load Report - Windows": CpuLoadReportWindows,
+  "CPU Load Report - Linux": CpuLoadReportLinux,
+  '"C" Disk Utilization Report - Windows': DiskUtilizationReportWindows,
+  '"/" Disk Utilization Report - Linux': DiskUtilizationReportLinux,
+  "Oracle Monitoring": OracleMonitoring,
+  "Real-time_OS Performance": OracleRealTimeOSPerformance,
+  "Oracle_Historical Performance_Dashboard": OracleHistoricalPerformance,
+  "Firewall Dashboard": FirewallDashboard,
+  "Real-time_Firewall info": FirewallRealTimeInfo,
+  "Real-time_Firewall Interface status": FirewallRealTimeInterfaceStatus,
+  "Real-time_Firewall Service": FirewallRealTimeService,
+  "Firewall_Historical Performance": FirewallHistoricalPerformance,
 };
 
 // ---------- Main DashboardPage ----------
-export default function DashboardPage({ go }) {
+export default function DashboardPage({ go, active }) {
   const [dashboardName, setDashboardName] = useState("Main Dashboard");
   const [showBack, setShowBack] = useState(false);
-  const [dashboardId, setDashboardId] = useState(null);
 
+  // Re‑evaluate whenever the active page changes
   useEffect(() => {
     const id = localStorage.getItem("selectedDashboard");
     if (id) {
-      setDashboardId(id);
       const dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
       const found = dashboards.find((d) => String(d.id) === String(id));
       if (found) {
         setDashboardName(found.name);
-        setShowBack(true);
       } else {
-        setDashboardName("Main Dashboard");
-        setShowBack(false);
+        setDashboardName("Dashboard View");
       }
+      setShowBack(true);
     } else {
       setDashboardName("Main Dashboard");
       setShowBack(false);
     }
-  }, []);
+  }, [active]); // 👈 dependency ensures it runs on every page change
 
   const goBack = () => {
     localStorage.removeItem("selectedDashboard");
     go("Dashboards");
   };
 
-  // Find the correct component for this dashboard
   const getDashboardComponent = () => {
     for (const [key, Component] of Object.entries(dashboardComponents)) {
       if (dashboardName.includes(key)) {
@@ -258,7 +252,7 @@ export default function DashboardPage({ go }) {
         </div>
       )}
 
-      <Content />
+      <Content go={go} />
     </div>
   );
 }
