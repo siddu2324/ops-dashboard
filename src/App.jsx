@@ -18,6 +18,9 @@ import { logAction } from "./services/auditService";
 const HomePage = lazy(() => import("./pages/HomePage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ServersPage = lazy(() => import("./pages/ServersPage"));
+const KubernetesPage = lazy(() => import("./pages/KubernetesPage"));
+const DockerPage = lazy(() => import("./pages/DockerPage"));
+const VMwarePage = lazy(() => import("./pages/VMwarePage"));
 const LogsPage = lazy(() => import("./pages/LogsPage"));
 const TracesPage = lazy(() => import("./pages/TracesPage"));
 const AlertingPage = lazy(() => import("./pages/AlertingPage"));
@@ -50,8 +53,9 @@ const SilencesPage = lazy(() => import("./pages/SilencesPage"));
 const ActiveNotificationsPage = lazy(() => import("./pages/ActiveNotificationsPage"));
 const AlertingSettingsPage = lazy(() => import("./pages/AlertingSettingsPage"));
 
-// ---- Placeholder data ----
+// ---- Placeholder data (removed entries for pages with dedicated components) ----
 const PLACEHOLDER_DATA = {
+  // Infrastructure
   Kubernetes: {
     title: "Kubernetes",
     description: "Everything running under your control. No kubernetes configured yet.",
@@ -164,6 +168,9 @@ const PAGES = {
   Home: HomePage,
   Dashboards: DashboardPage,
   Servers: ServersPage,
+  Kubernetes: KubernetesPage,
+  Docker: DockerPage,
+  VMware: VMwarePage,
   Logs: LogsPage,
   Traces: TracesPage,
   Alerting: AlertingPage,
@@ -191,8 +198,8 @@ const PAGES = {
   "Alert rules": AlertRulesPage,
   "Notification configuration": NotificationConfigPage,
   Silences: SilencesPage,
-  "Active notifications": ActiveNotificationsPage,
-  "Alerting Settings": AlertingSettingsPage,
+  "Active notifications": ActiveNotificationsPage, // ✅ mapped
+  Settings: AlertingSettingsPage,   // ⚠️ Overrides Admin Settings – consider renaming to "Alert Settings"
 };
 
 // ---- Fallback UI ----
