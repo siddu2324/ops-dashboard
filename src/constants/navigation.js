@@ -13,15 +13,21 @@ import {
   Key,
   Plug,
   Bell,
+  LayoutDashboard, // new icon for Dashboards
 } from "lucide-react";
 
 export const NAV = [
   { id: "home", label: "Home", icon: Home },
   {
+    id: "dashboards", // 👈 new top‑level item
+    label: "Dashboards",
+    icon: LayoutDashboard,
+  },
+  {
     id: "monitoring",
     label: "Monitoring",
     icon: Activity,
-    children: ["Dashboards", "Metrics", "Logs", "Traces"],
+    children: ["Metrics", "Logs", "Traces"], // 👈 "Dashboards" removed
   },
   {
     id: "infrastructure",
@@ -41,7 +47,6 @@ export const NAV = [
     icon: Siren,
     children: ["Incidents", "RCA", "Automation"],
   },
-  // ---- Alerting section ----
   {
     id: "alerting",
     label: "Alerting",
@@ -66,7 +71,6 @@ export const NAV = [
     icon: BarChart3,
     children: ["Executive Dashboard", "SLA", "Availability", "Capacity"],
   },
-  // ---- Administration (nested) ----
   {
     id: "administration",
     label: "Administration",
@@ -87,9 +91,9 @@ export const NAV = [
       },
       {
         id: "plugins-data",
-        label: "Plugins and data",   // ✅ Contains Correlations
+        label: "Plugins and data",
         icon: Database,
-        children: ["Plugins", "Correlations"], // ✅ Correct
+        children: ["Plugins", "Correlations"],
       },
       {
         id: "users-access",
@@ -97,7 +101,7 @@ export const NAV = [
         icon: Users,
         children: ["Users", "Teams", "Service accounts"],
       },
-      { id: "authentication", label: "Authentication", icon: Key },
+      "Authentication",
     ],
   },
   {

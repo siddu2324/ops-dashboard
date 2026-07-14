@@ -16,7 +16,8 @@ import { logAction } from "./services/auditService";
 
 // ---- Lazy load pages ----
 const HomePage = lazy(() => import("./pages/HomePage"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const DashboardListPage = lazy(() => import("./pages/DashboardListPage"));   // ✅ new list page
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));          // view page
 const ServersPage = lazy(() => import("./pages/ServersPage"));
 const KubernetesPage = lazy(() => import("./pages/KubernetesPage"));
 const DockerPage = lazy(() => import("./pages/DockerPage"));
@@ -44,7 +45,7 @@ const ServiceAccountsPage = lazy(() => import("./pages/ServiceAccountsPage"));
 const MetricsPage = lazy(() => import("./pages/MetricsPage"));
 const TeamsPage = lazy(() => import("./pages/TeamsPage"));
 const CorrelationsPage = lazy(() => import("./pages/CorrelationsPage"));
-const AuthenticationPage = lazy(() => import("./pages/AuthenticationPage"));   // ✅ Added import
+const AuthenticationPage = lazy(() => import("./pages/AuthenticationPage"));
 
 // ---- Alerting pages ----
 const AlertRulesPage = lazy(() => import("./pages/AlertRulesPage"));
@@ -166,7 +167,8 @@ const PLACEHOLDER_DATA = {
 // ---- Map page names to components ----
 const PAGES = {
   Home: HomePage,
-  Dashboards: DashboardPage,
+  Dashboards: DashboardListPage,      // ✅ list of dashboards
+  DashboardView: DashboardPage,       // ✅ individual dashboard view
   Servers: ServersPage,
   Kubernetes: KubernetesPage,
   Docker: DockerPage,
@@ -193,13 +195,13 @@ const PAGES = {
   Metrics: MetricsPage,
   Teams: TeamsPage,
   Correlations: CorrelationsPage,
-  Authentication: AuthenticationPage,   // ✅ Added mapping
+  Authentication: AuthenticationPage,
   // ---- Alerting mappings ----
   "Alert rules": AlertRulesPage,
   "Notification configuration": NotificationConfigPage,
   Silences: SilencesPage,
-  "Active notifications": ActiveNotificationsPage, // ✅ mapped
-  Settings: AlertingSettingsPage,   // ⚠️ Overrides Admin Settings – consider renaming to "Alert Settings"
+  "Active notifications": ActiveNotificationsPage,
+  "Alerting Settings": AlertingSettingsPage,
 };
 
 // ---- Fallback UI ----
@@ -232,7 +234,7 @@ function DashboardLayout() {
   });
 
   // Nav items with versioning
-  const NAV_VERSION = "1.4"; // bumped to 1.4 to force reload (optional)
+  const NAV_VERSION = "1.3";   // ✅ kept at 1.3 (or bump to 1.4 if needed)
   const [navItems, setNavItems] = useState(() => {
     const saved = localStorage.getItem("navItems");
     const savedVersion = localStorage.getItem("navItemsVersion");

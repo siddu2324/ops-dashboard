@@ -49,10 +49,29 @@ export default function DashboardPage({ go }) {
   const { activeAlertList, activeAlertCount, newAlertCount, resetNewAlertCount } = useAlerts();
   const [events, setEvents] = useState(generateEvents(8));
 
+  // ---- Back button state ----
+  const [dashboardName, setDashboardName] = useState("Default Dashboard");
+  const [showBack, setShowBack] = useState(false);
+
+  // ---- Load selected dashboard from localStorage ----
+  useEffect(() => {
+    const id = localStorage.getItem("selectedDashboard");
+    if (id) {
+      const dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
+      const found = dashboards.find((d) => d.id == id);
+      if (found) {
+        setDashboardName(found.name);
+        setShowBack(true);
+      }
+    }
+  }, []);
+
+  // ---- Reset new alert count on mount ----
   useEffect(() => {
     resetNewAlertCount();
   }, []);
 
+  // ---- Simulate new events every 10s ----
   useEffect(() => {
     const interval = setInterval(() => {
       setEvents((prev) => {
@@ -77,8 +96,29 @@ export default function DashboardPage({ go }) {
     go(page, groupId);
   };
 
+  const goBack = () => {
+    localStorage.removeItem("selectedDashboard");
+    go("Dashboards");
+  };
+
   return (
     <div className="grid gap-4">
+      {/* Back button (when viewing a specific dashboard) */}
+      {showBack && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goBack}
+              className="text-sm text-[var(--color-accent)] hover:underline flex items-center gap-1"
+            >
+              ← Back to Dashboards
+            </button>
+            <span className="text-sm text-[var(--color-muted)]">|</span>
+            <span className="text-sm text-[var(--color-text)] font-medium">{dashboardName}</span>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
         <Stat
