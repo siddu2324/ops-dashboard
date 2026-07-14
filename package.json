@@ -13,6 +13,8 @@
     "@radix-ui/react-dialog": "^1.1.19",
     "@types/react-window": "^1.8.8",
     "csv-stringify": "^6.8.1",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.23.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
