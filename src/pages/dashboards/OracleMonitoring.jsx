@@ -18,7 +18,7 @@ const severityCounts = {
   "Not classified": 3,
 };
 
-// Mock problems data
+// Mock problems data – durations now hour‑only (> 10h)
 const problemsData = [
   {
     id: 1,
@@ -29,7 +29,7 @@ const problemsData = [
     host: "Oracle",
     problem: "Unavailable by ICMP ping",
     severity: "Critical",
-    duration: "24d 5h 39m",
+    duration: "13h",           // was "24d 5h 39m" → hour-only
     actions: "Update",
   },
   {
@@ -41,7 +41,7 @@ const problemsData = [
     host: "Oracle",
     problem: "Oracle: Failed to fetch info data (or no data for 30m)",
     severity: "Critical",
-    duration: "1y 7M 14d",
+    duration: "15h",           // was "1y 7M 14d"
     actions: "Update",
   },
   {
@@ -53,7 +53,7 @@ const problemsData = [
     host: "Oracle",
     problem: "Oracle: TBS SYSTEM_ Tablespace usage too low (less 3 for 5 min)",
     severity: "High",
-    duration: "2y 11M 19d",
+    duration: "17h",           // was "2y 11M 19d"
     actions: "Update",
   },
   {
@@ -65,7 +65,7 @@ const problemsData = [
     host: "Oracle",
     problem: "Oracle: Number of REDO logs available for switching is too low (less 3 for 5 min)",
     severity: "High",
-    duration: "2y 11M 19d",
+    duration: "19h",           // was "2y 11M 19d"
     actions: "Update",
   },
 ];
@@ -188,7 +188,7 @@ export default function OracleMonitoring({ go }) {
                       </td>
                       <td className="py-2 px-3 text-[var(--color-faint)] text-xs">{row.duration}</td>
                       <td className="py-2 px-3">
-                        <button className="text-xs text-[var(--color-accent)] hover:underline">Update</button>
+                        <button className="text-xs text-[var(--color-accent)] hover:underline">{row.actions}</button>
                       </td>
                     </tr>
                   ))}

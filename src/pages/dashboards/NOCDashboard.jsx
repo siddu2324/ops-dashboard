@@ -15,9 +15,9 @@ import StatusDot from "../../components/common/StatusDot";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import IndiaMap from "../../assets/india-map.png"; // Step 2 – Import the image
+import IndiaMap from "../../assets/india-map.png";
 
-// Step 2 – Define city coordinates
+// City coordinates
 const cityCoordinates = {
   Delhi:   { left: "40%", top: "43%" },
   Mumbai:  { left: "35%",  top: "57%" },
@@ -44,6 +44,9 @@ const DatePicker = ({ value, onChange, label }) => {
 
 // Popup Modal Component
 const PopupModal = ({ isOpen, onClose, title, data, severity, areaName, totalCount }) => {
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState(null);
+
   if (!isOpen) return null;
 
   const severityConfig = {
@@ -56,6 +59,11 @@ const PopupModal = ({ isOpen, onClose, title, data, severity, areaName, totalCou
   };
 
   const colors = severityConfig[severity] || severityConfig['Not classified'];
+
+  // Compute average duration in hours
+  const avgHours = data.length > 0
+    ? Math.round(data.reduce((acc, d) => acc + parseInt(d.duration, 10), 0) / data.length)
+    : 0;
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -108,7 +116,7 @@ const PopupModal = ({ isOpen, onClose, title, data, severity, areaName, totalCou
                 </div>
                 <div className="bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-3">
                   <p className="text-xs text-[var(--color-faint)]">Avg Duration</p>
-                  <p className="text-lg font-bold text-[var(--color-text)]">{Math.round(data.reduce((acc, d) => acc + parseInt(d.duration), 0) / data.length / 30) || 0} months</p>
+                  <p className="text-lg font-bold text-[var(--color-text)]">{avgHours}h</p>
                 </div>
               </div>
 
@@ -126,7 +134,14 @@ const PopupModal = ({ isOpen, onClose, title, data, severity, areaName, totalCou
                   </thead>
                   <tbody>
                     {data.map((item, index) => (
-                      <tr key={index} className={`border-b border-[var(--color-border)] hover:bg-[var(--color-border)]/5 transition ${index === data.length - 1 ? 'border-b-0' : ''}`}>
+                      <tr
+                        key={index}
+                        onClick={() => {
+                          setSelectedDetail(item);
+                          setShowDetailModal(true);
+                        }}
+                        className={`border-b border-[var(--color-border)] hover:bg-[var(--color-border)]/5 transition cursor-pointer ${index === data.length - 1 ? 'border-b-0' : ''}`}
+                      >
                         <td className="px-4 py-3 text-[var(--color-text)] font-mono text-xs whitespace-nowrap">
                           {item.time}
                         </td>
@@ -192,13 +207,90 @@ const PopupModal = ({ isOpen, onClose, title, data, severity, areaName, totalCou
           </div>
         </div>
       </div>
+
+      {/* Detail Sub-Modal */}
+      {showDetailModal && selectedDetail && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4"
+          onClick={() => setShowDetailModal(false)}
+        >
+          <div
+            className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+              <div className="flex items-center gap-3">
+                <AlertCircle size={20} className="text-[var(--color-crit)]" />
+                <div>
+                  <h3 className="text-xl font-bold text-[var(--color-text)]">
+                    {selectedDetail.host} · {selectedDetail.problem}
+                  </h3>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <span className="text-xs bg-[var(--color-panel-alt)] px-2 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-muted)]">
+                      {severity}
+                    </span>
+                    <span className="text-xs text-[var(--color-muted)]">Host {selectedDetail.host}</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="w-10 h-10 rounded-xl hover:bg-[var(--color-border)]/10 transition flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-text)]"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] space-y-5">
+              {/* Root Cause */}
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h4 className="text-sm font-semibold text-[var(--color-text)] uppercase tracking-wider">Root Cause Analysis</h4>
+                  <span className="text-xs font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-2 py-0.5 rounded-full border border-[var(--color-accent)]/20">
+                    {selectedDetail.confidence || "85%"} CONFIDENCE
+                  </span>
+                </div>
+                <p className="text-sm text-[var(--color-text)] leading-relaxed">
+                  {selectedDetail.rootCause || "No root cause analysis available."}
+                </p>
+                <ul className="mt-3 space-y-1">
+                  {(selectedDetail.metrics || []).map((metric, i) => (
+                    <li key={i} className="text-sm text-[var(--color-muted)] flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]"></span>
+                      {metric}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Recommended Action */}
+              <div>
+                <h4 className="text-sm font-semibold text-[var(--color-text)] uppercase tracking-wider mb-2">Recommended Action</h4>
+                <div className="bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-4">
+                  <p className="text-sm text-[var(--color-text)] leading-relaxed">
+                    {selectedDetail.recommendation || "No recommendation available."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end p-4 border-t border-[var(--color-border)] bg-[var(--color-bg)] px-6">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="px-6 py-2 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition shadow-lg shadow-[var(--color-accent)]/20"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// Step 3 – Professional India Map with clickable dots (replaces the SVG version)
+// GeoMap with India map image
 const GeoMap = ({ problemGroups, onDotClick }) => {
-  // Build city data from problemGroups + coordinates
   const cities = problemGroups.map(group => ({
     ...group,
     ...(cityCoordinates[group.name] || { left: "50%", top: "50%" })
@@ -206,47 +298,26 @@ const GeoMap = ({ problemGroups, onDotClick }) => {
 
   return (
     <div className="relative w-full max-w-[700px] mx-auto">
-      {/* Background map image */}
       <img
         src={IndiaMap}
         alt="India Map"
         className="w-full h-auto select-none"
       />
-
-      {/* City dots */}
       {cities.map((city) => {
-        // Determine status color based on critical/high/medium counts
-        let color = "#00ff88"; // healthy
-        if (city.critical > 0) color = "#ff4444"; // critical
-        else if (city.high > 0) color = "#ffaa00"; // warning
+        let color = "#00ff88";
+        if (city.critical > 0) color = "#ff4444";
+        else if (city.high > 0) color = "#ffaa00";
 
         return (
           <button
             key={city.name}
             className="absolute"
-            style={{
-              left: city.left,
-              top: city.top,
-              transform: "translate(-50%,-50%)"
-            }}
+            style={{ left: city.left, top: city.top, transform: "translate(-50%,-50%)" }}
             onClick={() => onDotClick(city.name, city.critical > 0 ? "Critical" : city.high > 0 ? "High" : "Low", city.critical + city.high + city.medium)}
           >
-            {/* Pulse animation */}
-            <span
-              className="absolute w-6 h-6 rounded-full animate-ping"
-              style={{ background: color, opacity: 0.3 }}
-            />
-
-            {/* Dot */}
-            <span
-              className="block w-4 h-4 rounded-full border-2 border-white"
-              style={{ background: color }}
-            />
-
-            {/* City name */}
-            <div className="mt-1 text-xs font-semibold text-white whitespace-nowrap">
-              {city.name}
-            </div>
+            <span className="absolute w-6 h-6 rounded-full animate-ping" style={{ background: color, opacity: 0.3 }} />
+            <span className="block w-4 h-4 rounded-full border-2 border-white" style={{ background: color }} />
+            <div className="mt-1 text-xs font-semibold text-white whitespace-nowrap">{city.name}</div>
           </button>
         );
       })}
@@ -254,63 +325,48 @@ const GeoMap = ({ problemGroups, onDotClick }) => {
   );
 };
 
-// Generate popup data for a specific area and severity
+// Generate popup data – durations now in hours (11–30h)
 const generatePopupDataForArea = (areaName, severity, count) => {
   const problems = [
-    "Service is unavailable - HTTP 503 error",
-    "High CPU usage detected - exceeding 90% threshold",
-    "Memory exhausted - swap usage at 95%",
-    "Disk full - no space left on device",
-    "Network latency spike - response time > 500ms",
-    "Database connection failed - connection pool exhausted",
-    "SSL certificate expired - unable to establish secure connection",
-    "Backup failed - insufficient storage space",
-    "Service not responding - health check timeout",
-    "High error rate - 5% of requests failing",
-    "JVM heap memory usage critical",
-    "Database replication lag detected",
-    "Cache miss ratio high - performance degraded",
-    "API rate limit exceeded",
-    "Pod crash loop detected"
+    { problem: "Service is unavailable - HTTP 503 error", rootCause: "The service is not responding to health checks. This may be due to a deployment failure, configuration error, or resource exhaustion.", recommendation: "Check the service logs for errors. Verify the deployment status. Restart the service if needed." },
+    { problem: "High CPU usage detected - exceeding 90% threshold", rootCause: "CPU utilization has exceeded the critical threshold. This is likely caused by a runaway process, high system load, or insufficient resources.", recommendation: "Investigate the top processes using 'top' or 'task manager'. Consider scaling resources or optimizing application code." },
+    { problem: "Memory exhausted - swap usage at 95%", rootCause: "Memory usage is critically high. This may indicate a memory leak, excessive caching, or insufficient RAM for the running services.", recommendation: "Check memory consumption per process. Increase swap space or add more RAM. Investigate for memory leaks." },
+    { problem: "Disk full - no space left on device", rootCause: "Disk space is fully utilized. This may cause system performance degradation and application failures.", recommendation: "Clean up temporary files, archive old logs, and consider increasing disk capacity or moving data to another volume." },
+    { problem: "Network latency spike - response time > 500ms", rootCause: "Network latency has increased significantly. This may be due to network congestion, routing issues, or overloaded network devices.", recommendation: "Check network utilization and identify the source of congestion. Verify routing tables and consider QoS policies." },
+    { problem: "Database connection failed - connection pool exhausted", rootCause: "The database connection pool is exhausted. This may be due to a connection leak, insufficient pool size, or database overload.", recommendation: "Increase the connection pool size. Investigate for connection leaks in the application. Monitor database performance." },
+    { problem: "SSL certificate expired - unable to establish secure connection", rootCause: "The SSL certificate has expired. This prevents secure connections and may cause service disruption.", recommendation: "Renew the SSL certificate and deploy it to all affected services. Update the certificate renewal automation." },
+    { problem: "Backup failed - insufficient storage space", rootCause: "The backup process failed due to insufficient storage space. This may compromise data recovery capabilities.", recommendation: "Free up storage space by removing old backups. Increase storage capacity or implement a retention policy." },
+    { problem: "Service not responding - health check timeout", rootCause: "The service is not responding to health checks within the timeout period. This may indicate a hung process or deadlock.", recommendation: "Restart the service and check logs for errors. Investigate potential deadlocks or resource contention." },
+    { problem: "High error rate - 5% of requests failing", rootCause: "The error rate has exceeded the acceptable threshold. This may be due to application bugs, dependency failures, or infrastructure issues.", recommendation: "Analyze error logs to identify the root cause. Check dependencies and infrastructure health. Deploy fixes as needed." },
+    { problem: "JVM heap memory usage critical", rootCause: "JVM heap memory usage is critically high. This may be due to a memory leak or excessive object allocation.", recommendation: "Analyze heap dumps to identify memory leaks. Increase heap size if needed. Optimize application code." },
+    { problem: "Database replication lag detected", rootCause: "Database replication lag is exceeding acceptable limits. This may affect read consistency and failover capabilities.", recommendation: "Check network latency between replicas. Investigate write load and optimize replication settings." },
+    { problem: "Cache miss ratio high - performance degraded", rootCause: "The cache miss ratio is high, causing performance degradation. This may be due to cache eviction policies or changing access patterns.", recommendation: "Review cache configuration and increase cache size if needed. Analyze cache access patterns." },
+    { problem: "API rate limit exceeded", rootCause: "API rate limits have been exceeded. This may be due to increased usage or a misconfigured client.", recommendation: "Review API usage patterns and consider increasing rate limits. Implement client‑side throttling." },
+    { problem: "Pod crash loop detected", rootCause: "Kubernetes pods are in a crash loop. This may be due to application errors, resource constraints, or configuration issues.", recommendation: "Check pod logs for errors. Verify resource limits and application configuration. Investigate cluster health." },
+    { problem: "Container health check failed", rootCause: "Container health checks are failing. This may be due to application errors or dependency failures within the container.", recommendation: "Check container logs for errors. Verify health check configuration. Investigate application state." },
+    { problem: "DNS resolution failed", rootCause: "DNS resolution is failing for critical services. This may be due to DNS server issues or incorrect DNS configuration.", recommendation: "Check DNS server health and connectivity. Verify DNS configuration and fallback settings." },
+    { problem: "Firewall rule blocking traffic", rootCause: "Firewall rules are blocking legitimate traffic. This may be due to misconfigured rules or security policy changes.", recommendation: "Review firewall logs to identify blocked traffic. Update rules to allow necessary traffic while maintaining security." }
   ];
-  
+
   const hosts = [
-    "VITBLRUATMSSQL",
-    "VITBLRSRVAAC01",
-    "VITBLRSRVD01",
-    "vitblrsrvbkp01",
-    "VITBLRSRVAAC02",
-    "VITBLRSRVVW01",
-    "VITSRVADC02",
-    "VITBLRSRVPW01",
-    "ASPL_VITBLRSRVT51",
-    "VITSRVPRTG01",
-    "PROD-WEB-01",
-    "PROD-DB-01",
-    "STG-APP-01",
-    "DEV-CACHE-01"
+    "VITBLRUATMSSQL", "VITBLRSRVAAC01", "VITBLRSRVD01", "vitblrsrvbkp01",
+    "VITBLRSRVAAC02", "VITBLRSRVVW01", "VITSRVADC02", "VITBLRSRVPW01",
+    "ASPL_VITBLRSRVT51", "VITSRVPRTG01", "PROD-WEB-01", "PROD-DB-01",
+    "STG-APP-01", "DEV-CACHE-01", "AZSHPWEB01v", "AZSHPWEB02v",
+    "EASTARM01v", "EASTFILE01v", "EASTROOTCA", "NOCFILE01v"
   ];
-  
+
   const tags = [
-    "Application: MSSQL",
-    "Service: Web Server",
-    "Environment: Production",
-    "Priority: High",
-    "Application: Database",
-    "Service: API Gateway",
-    "Environment: Staging",
-    "Priority: Medium",
-    "Application: Cache",
-    "Service: Load Balancer",
-    "Environment: Development",
-    "Team: DevOps",
-    "Team: Backend",
-    "Component: Authentication"
+    "Application: MSSQL", "Service: Web Server", "Environment: Production",
+    "Priority: High", "Application: Database", "Service: API Gateway",
+    "Environment: Staging", "Priority: Medium", "Application: Cache",
+    "Service: Load Balancer", "Environment: Development", "Team: DevOps",
+    "Team: Backend", "Component: Authentication"
   ];
 
   const data = [];
   const countToGenerate = Math.min(count || 5, 20);
-  
+
   for (let i = 0; i < countToGenerate; i++) {
     const now = new Date();
     const pastDate = new Date(now);
@@ -318,11 +374,11 @@ const generatePopupDataForArea = (areaName, severity, count) => {
     pastDate.setHours(Math.floor(Math.random() * 24));
     pastDate.setMinutes(Math.floor(Math.random() * 60));
     pastDate.setSeconds(Math.floor(Math.random() * 60));
-    
-    const durationDays = Math.floor(Math.random() * 365) + 1;
-    const durationMonths = Math.floor(durationDays / 30);
-    const remainingDays = durationDays % 30;
-    
+
+    // Duration: hours only, between 11 and 30
+    const durationHours = Math.floor(Math.random() * 20) + 11; // 11–30
+    const duration = `${durationHours}h`;
+
     const numTags = Math.floor(Math.random() * 2) + 2;
     const selectedTags = [];
     const shuffledTags = [...tags].sort(() => Math.random() - 0.5);
@@ -331,28 +387,36 @@ const generatePopupDataForArea = (areaName, severity, count) => {
         selectedTags.push(shuffledTags[j]);
       }
     }
-    
+
+    const problemData = problems[i % problems.length];
     data.push({
       time: pastDate.toISOString().replace('T', ' ').slice(0, 19),
       info: severity.charAt(0).toUpperCase() + severity.slice(1),
       host: hosts[Math.floor(Math.random() * hosts.length)],
-      problem: problems[Math.floor(Math.random() * problems.length)],
-      duration: `${durationMonths > 0 ? durationMonths + 'y ' : ''}${remainingDays > 0 ? remainingDays + 'M ' : ''}${Math.floor(Math.random() * 30) + 1}d`,
-      tags: selectedTags
+      problem: problemData.problem,
+      duration: duration,
+      tags: selectedTags,
+      rootCause: problemData.rootCause,
+      recommendation: problemData.recommendation,
+      confidence: `${Math.floor(70 + Math.random() * 25)}%`,
+      metrics: [
+        `Status: ${severity}`,
+        `Host: ${hosts[Math.floor(Math.random() * hosts.length)]}`,
+        `Detected: ${new Date(pastDate).toLocaleDateString()}`
+      ]
     });
   }
-  
+
   return data;
 };
 
-// Mock data generator (only problem groups now)
+// Mock data generator
 const generateNOCData = () => {
   const problemGroups = [
     { name: "Bangalore", critical: 1, high: 16, medium: 69, low: 8, information: 14, notClassified: 1 },
     { name: "Mumbai", critical: 0, high: 8, medium: 23, low: 3, information: 5, notClassified: 0 },
     { name: "Delhi", critical: 2, high: 4, medium: 12, low: 1, information: 3, notClassified: 1 },
   ];
-
   return { problemGroups };
 };
 
@@ -427,9 +491,7 @@ export default function NOCDashboard() {
 
   const openPopup = (areaName, severity, count) => {
     if (!dashboardData) return;
-    
     const data = generatePopupDataForArea(areaName, severity, count);
-    
     setPopupState({
       isOpen: true,
       title: `${severity} Problems in ${areaName}`,
@@ -451,11 +513,9 @@ export default function NOCDashboard() {
     });
   };
 
-  // Export to PDF with map image
   const exportToPDF = async () => {
     setIsExporting(true);
     const toastId = toast.loading("Generating PDF...");
-    
     try {
       const pdf = new jsPDF('landscape', 'mm', 'a4');
       let yPos = 20;
@@ -463,24 +523,20 @@ export default function NOCDashboard() {
       const pageWidth = 280;
       const pageHeight = 210;
       
-      // Title
       pdf.setFontSize(18);
       pdf.setTextColor('#000000');
       pdf.text('NOC Dashboard', margin, yPos);
       yPos += 10;
       
-      // Date range
       pdf.setFontSize(10);
       pdf.setTextColor('#666666');
       pdf.text(`From: ${fromDate}  To: ${toDate}`, margin, yPos);
       yPos += 10;
       
-      // Separator
       pdf.setDrawColor(200, 200, 200);
       pdf.line(margin, yPos, pageWidth - margin, yPos);
       yPos += 8;
       
-      // Capture the map as an image
       const mapElement = document.querySelector('.map-container');
       if (mapElement) {
         const canvas = await html2canvas(mapElement, {
@@ -491,22 +547,17 @@ export default function NOCDashboard() {
           width: mapElement.scrollWidth,
           height: mapElement.scrollHeight,
         });
-        
         const imgData = canvas.toDataURL('image/jpeg', 0.9);
-        
         const imgWidth = pageWidth - (margin * 2);
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
         if (yPos + imgHeight > pageHeight - 20) {
           pdf.addPage();
           yPos = 20;
         }
-        
         pdf.addImage(imgData, 'JPEG', margin, yPos, imgWidth, imgHeight);
         yPos += imgHeight + 10;
       }
       
-      // Problems by severity table
       if (yPos > pageHeight - 50) {
         pdf.addPage();
         yPos = 20;
@@ -520,7 +571,6 @@ export default function NOCDashboard() {
       const headers = ['Host group', 'Critical', 'High', 'Medium', 'Low', 'Information', 'Not classified'];
       let xPos = margin;
       const colWidths = [45, 22, 22, 22, 22, 28, 32];
-      
       pdf.setFontSize(9);
       pdf.setTextColor('#666666');
       headers.forEach((header, i) => {
@@ -555,9 +605,7 @@ export default function NOCDashboard() {
       pdf.setFontSize(8);
       pdf.setTextColor('#999999');
       pdf.text(`Generated on: ${new Date().toLocaleString()}`, margin, pageHeight - 10);
-      
       pdf.save(`NOC_Dashboard_${new Date().toISOString().slice(0, 10)}.pdf`);
-      
       toast.success("PDF exported successfully!", { id: toastId });
     } catch (error) {
       console.error("PDF Export Error:", error);
@@ -585,16 +633,8 @@ export default function NOCDashboard() {
       <Card className="overflow-hidden">
         <div className="p-4">
           <div className="flex flex-wrap items-center gap-4">
-            <DatePicker 
-              value={fromDate} 
-              onChange={setFromDate} 
-              label="From" 
-            />
-            <DatePicker 
-              value={toDate} 
-              onChange={setToDate} 
-              label="To" 
-            />
+            <DatePicker value={fromDate} onChange={setFromDate} label="From" />
+            <DatePicker value={toDate} onChange={setToDate} label="To" />
             <button 
               onClick={handleApplyDateRange}
               className="px-4 py-1.5 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-80 transition"
@@ -605,7 +645,7 @@ export default function NOCDashboard() {
         </div>
       </Card>
 
-      {/* Problems by Severity - Clean Table Design */}
+      {/* Problems by Severity */}
       <Card className="overflow-hidden">
         <div 
           className="flex items-center justify-between p-4 cursor-pointer hover:bg-[var(--color-border)]/10 transition"
@@ -624,40 +664,22 @@ export default function NOCDashboard() {
                 <tr className="bg-[var(--color-bg)] border-b border-[var(--color-border)]">
                   <th className="px-4 py-3 text-left text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider">Host group</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                      Critical
-                    </span>
+                    <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span>Critical</span>
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                      High
-                    </span>
+                    <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-500"></span>High</span>
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                      Medium
-                    </span>
+                    <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500"></span>Medium</span>
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                      Low
-                    </span>
+                    <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Low</span>
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                      Information
-                    </span>
+                    <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500"></span>Information</span>
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-gray-500"></span>
-                      Not classified
-                    </span>
+                    <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-500"></span>Not classified</span>
                   </th>
                 </tr>
               </thead>
@@ -665,83 +687,47 @@ export default function NOCDashboard() {
                 {dashboardData.problemGroups.map((group, i) => (
                   <tr key={i} className={`border-b border-[var(--color-border)] hover:bg-[var(--color-border)]/5 transition ${i % 2 === 0 ? 'bg-[var(--color-bg)]/30' : ''}`}>
                     <td className="px-4 py-3 text-[var(--color-text)] font-medium">{group.name}</td>
-                    
                     <td className="px-4 py-3 text-center">
                       {group.critical > 0 ? (
-                        <button
-                          onClick={() => openPopup(group.name, 'Critical', group.critical)}
-                          className="px-3 py-1 rounded-lg bg-red-500/10 text-red-400 font-bold hover:bg-red-500/20 transition cursor-pointer border border-red-500/20 hover:border-red-500/40"
-                        >
+                        <button onClick={() => openPopup(group.name, 'Critical', group.critical)} className="px-3 py-1 rounded-lg bg-red-500/10 text-red-400 font-bold hover:bg-red-500/20 transition cursor-pointer border border-red-500/20 hover:border-red-500/40">
                           {group.critical}
                         </button>
-                      ) : (
-                        <span className="text-[var(--color-faint)]">—</span>
-                      )}
+                      ) : <span className="text-[var(--color-faint)]">—</span>}
                     </td>
-                    
                     <td className="px-4 py-3 text-center">
                       {group.high > 0 ? (
-                        <button
-                          onClick={() => openPopup(group.name, 'High', group.high)}
-                          className="px-3 py-1 rounded-lg bg-orange-500/10 text-orange-400 font-bold hover:bg-orange-500/20 transition cursor-pointer border border-orange-500/20 hover:border-orange-500/40"
-                        >
+                        <button onClick={() => openPopup(group.name, 'High', group.high)} className="px-3 py-1 rounded-lg bg-orange-500/10 text-orange-400 font-bold hover:bg-orange-500/20 transition cursor-pointer border border-orange-500/20 hover:border-orange-500/40">
                           {group.high}
                         </button>
-                      ) : (
-                        <span className="text-[var(--color-faint)]">—</span>
-                      )}
+                      ) : <span className="text-[var(--color-faint)]">—</span>}
                     </td>
-                    
                     <td className="px-4 py-3 text-center">
                       {group.medium > 0 ? (
-                        <button
-                          onClick={() => openPopup(group.name, 'Medium', group.medium)}
-                          className="px-3 py-1 rounded-lg bg-yellow-500/10 text-yellow-400 font-bold hover:bg-yellow-500/20 transition cursor-pointer border border-yellow-500/20 hover:border-yellow-500/40"
-                        >
+                        <button onClick={() => openPopup(group.name, 'Medium', group.medium)} className="px-3 py-1 rounded-lg bg-yellow-500/10 text-yellow-400 font-bold hover:bg-yellow-500/20 transition cursor-pointer border border-yellow-500/20 hover:border-yellow-500/40">
                           {group.medium}
                         </button>
-                      ) : (
-                        <span className="text-[var(--color-faint)]">—</span>
-                      )}
+                      ) : <span className="text-[var(--color-faint)]">—</span>}
                     </td>
-                    
                     <td className="px-4 py-3 text-center">
                       {group.low > 0 ? (
-                        <button
-                          onClick={() => openPopup(group.name, 'Low', group.low)}
-                          className="px-3 py-1 rounded-lg bg-blue-500/10 text-blue-400 font-bold hover:bg-blue-500/20 transition cursor-pointer border border-blue-500/20 hover:border-blue-500/40"
-                        >
+                        <button onClick={() => openPopup(group.name, 'Low', group.low)} className="px-3 py-1 rounded-lg bg-blue-500/10 text-blue-400 font-bold hover:bg-blue-500/20 transition cursor-pointer border border-blue-500/20 hover:border-blue-500/40">
                           {group.low}
                         </button>
-                      ) : (
-                        <span className="text-[var(--color-faint)]">—</span>
-                      )}
+                      ) : <span className="text-[var(--color-faint)]">—</span>}
                     </td>
-                    
                     <td className="px-4 py-3 text-center">
                       {group.information > 0 ? (
-                        <button
-                          onClick={() => openPopup(group.name, 'Information', group.information)}
-                          className="px-3 py-1 rounded-lg bg-purple-500/10 text-purple-400 font-bold hover:bg-purple-500/20 transition cursor-pointer border border-purple-500/20 hover:border-purple-500/40"
-                        >
+                        <button onClick={() => openPopup(group.name, 'Information', group.information)} className="px-3 py-1 rounded-lg bg-purple-500/10 text-purple-400 font-bold hover:bg-purple-500/20 transition cursor-pointer border border-purple-500/20 hover:border-purple-500/40">
                           {group.information}
                         </button>
-                      ) : (
-                        <span className="text-[var(--color-faint)]">—</span>
-                      )}
+                      ) : <span className="text-[var(--color-faint)]">—</span>}
                     </td>
-                    
                     <td className="px-4 py-3 text-center">
                       {group.notClassified > 0 ? (
-                        <button
-                          onClick={() => openPopup(group.name, 'Not classified', group.notClassified)}
-                          className="px-3 py-1 rounded-lg bg-gray-500/10 text-gray-400 font-bold hover:bg-gray-500/20 transition cursor-pointer border border-gray-500/20 hover:border-gray-500/40"
-                        >
+                        <button onClick={() => openPopup(group.name, 'Not classified', group.notClassified)} className="px-3 py-1 rounded-lg bg-gray-500/10 text-gray-400 font-bold hover:bg-gray-500/20 transition cursor-pointer border border-gray-500/20 hover:border-gray-500/40">
                           {group.notClassified}
                         </button>
-                      ) : (
-                        <span className="text-[var(--color-faint)]">—</span>
-                      )}
+                      ) : <span className="text-[var(--color-faint)]">—</span>}
                     </td>
                   </tr>
                 ))}
@@ -762,7 +748,7 @@ export default function NOCDashboard() {
         totalCount={popupState.totalCount}
       />
 
-      {/* Step 4 – India Map with image and dots */}
+      {/* India Map */}
       <Card className="overflow-hidden">
         <div 
           className="flex items-center justify-between p-4 cursor-pointer hover:bg-[var(--color-border)]/10 transition"

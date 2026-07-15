@@ -124,18 +124,7 @@ export const WebSocketProvider = ({ children }) => {
       try {
         const data = JSON.parse(event.data);
         setLastMessage(data);
-        // If it's a critical alert, show a toast (bottom position by default)
-        if (data.type === "alert" && data.payload.severity === "critical") {
-          toast.error(`🚨 Critical Alert: ${data.payload.name}`, {
-            duration: 5000,
-          });
-        }
-        if (data.type === "alert" && data.payload.severity === "warning") {
-          toast(`⚠️ Warning: ${data.payload.name}`, {
-            duration: 4000,
-            icon: "⚠️",
-          });
-        }
+        // Toast notifications removed for critical and warning alerts
       } catch (e) {
         console.error("Failed to parse WebSocket message", e);
       }

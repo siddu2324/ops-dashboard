@@ -18,7 +18,10 @@ import ChartTooltip from "../components/common/ChartTooltip";
 import { useAlerts } from "../context/AlertContext";
 import { cpuSeries } from "../data/cpuSeries";
 import { reqSeries } from "../data/reqSeries";
-import HealthSummary from "../components/HealthSummary"; // 👈 import HealthSummary
+import HealthSummary from "../components/HealthSummary";
+import { defaultDashboards } from "../data/defaultDashboards"; // 👈 new import
+
+// --- Dashboard child components (unchanged) ---
 import MemoryUtilizationReport from "./dashboards/MemoryUtilizationReport";
 import MemoryUtilizationReportLinux from "./dashboards/MemoryUtilizationReportLinux";
 import CpuLoadReportWindows from "./dashboards/CpuLoadReportWindows";
@@ -97,7 +100,7 @@ const DefaultDashboardContent = ({ go }) => {
 
   return (
     <div className="grid gap-4">
-      <HealthSummary /> {/* 👈 Add HealthSummary at the top */}
+      <HealthSummary />
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
         <Stat label="Active alerts" value={activeAlertCount} delta={`${newAlertCount} new`} tone="var(--color-crit)" />
         <Stat label="Hosts up" value="248" unit="/ 251" delta="99.2% fleet" />
@@ -217,11 +220,20 @@ export default function DashboardPage({ go, active }) {
   const [dashboardName, setDashboardName] = useState("Main Dashboard");
   const [showBack, setShowBack] = useState(false);
 
+  // ✅ Enhanced useEffect with fallback to defaultDashboards
   useEffect(() => {
     const id = localStorage.getItem("selectedDashboard");
     if (id) {
-      const dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
-      const found = dashboards.find((d) => String(d.id) === String(id));
+      // Try to find in localStorage dashboards first
+      let dashboards = [];
+      try {
+        dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
+      } catch {}
+      let found = dashboards.find((d) => String(d.id) === String(id));
+      // If not found, fallback to defaultDashboards
+      if (!found) {
+        found = defaultDashboards.find((d) => String(d.id) === String(id));
+      }
       if (found) {
         setDashboardName(found.name);
       } else {

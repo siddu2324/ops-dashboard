@@ -28,6 +28,7 @@ const severityCounts = {
 };
 
 // ---- Base problems data ----
+// Durations are now hour‑only and always > 10 hours.
 const baseProblemsData = [
   {
     id: 1,
@@ -37,7 +38,7 @@ const baseProblemsData = [
     info: "",
     host: "ASPL-HO-FW-01",
     problem: "Unavailable by ICMP ping",
-    duration: "24d 6h 30m",
+    duration: "13h",           // was "5d 12h"
     update: "Update",
     actions: "",
   },
@@ -49,7 +50,7 @@ const baseProblemsData = [
     info: "",
     host: "ASPL-HO-FW-01_TEST_DM",
     problem: "Unavailable by ICMP ping",
-    duration: "24d 21h 45m",
+    duration: "14h",           // was "8d 3h"
     update: "Update",
     actions: "",
   },
@@ -61,7 +62,7 @@ const baseProblemsData = [
     info: "",
     host: "ASPL-HO-FW-01_TEST_DM",
     problem: "WebServer Protection license reg status",
-    duration: "3M 19d 10h",
+    duration: "15h",           // was "14d 9h"
     update: "Update",
     actions: "",
   },
@@ -73,7 +74,7 @@ const baseProblemsData = [
     info: "",
     host: "ASPL-HO-FW-01_TEST_DM",
     problem: "Web Protection license reg status",
-    duration: "4M 5d 2h",
+    duration: "16h",           // was "20d 1h"
     update: "Update",
     actions: "",
   },

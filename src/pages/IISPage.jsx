@@ -276,28 +276,35 @@ export default function IISPage({ go }) {
     }));
   };
 
+  // ✅ Updated handleRowClick as requested
   const handleRowClick = (app) => {
-    const isHealthy = app.status === "Up";
-    const severity = isHealthy ? "Information" :
-                     app.status === "Critical" ? "Critical" :
+    // If the application is "Up", show a toast and do nothing else
+    if (app.status === "Up") {
+      toast.info(`${app.name} is healthy. No details available.`);
+      return;
+    }
+
+    // Existing logic for non‑Up statuses
+    const isHealthy = false; // since we already know it's not Up
+    const severity = app.status === "Critical" ? "Critical" :
                      app.status === "Warning" ? "Warning" :
                      app.status === "Down" ? "High" : "Information";
 
     const isAcknowledged = acknowledgedApps.has(app.name);
-    const acknowledgedBy = isAcknowledged ? "Acknowledged" : (isHealthy ? "System" : "Not yet...");
+    const acknowledgedBy = isAcknowledged ? "Acknowledged" : "Not yet...";
 
     const data = {
       title: app.name,
-      status: isAcknowledged ? "Acknowledged" : (isHealthy ? "Healthy" : app.status),
+      status: isAcknowledged ? "Acknowledged" : app.status,
       severity: severity,
-      activeTime: isHealthy ? "No active issues" : `${Math.floor(Math.random() * 100) + 1}d ${Math.floor(Math.random() * 24)}h`,
-      message: `Application "${app.name}" is ${isHealthy ? "up" : app.status.toLowerCase()}`,
+      activeTime: `${Math.floor(Math.random() * 100) + 1}d ${Math.floor(Math.random() * 24)}h`,
+      message: `Application "${app.name}" is ${app.status.toLowerCase()}`,
       triggerTime: new Date(Date.now() - Math.random() * 86400000 * 30).toLocaleString(),
       triggeredBy: "Microsoft IIS",
       escalation: "Level 1",
       acknowledgedBy: acknowledgedBy,
       alertDefinition: `Alert: ${app.name} is ${app.status.toLowerCase()}`,
-      isAlert: !isHealthy,
+      isAlert: true,
     };
     setModalData(data);
     setModalOpen(true);

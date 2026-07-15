@@ -229,11 +229,7 @@ export const AlertProvider = ({ children }) => {
           if (newStatus !== "up") {
             const newAlert = generateMockAlert(host);
             setAlerts((prev) => [...prev, newAlert]);
-            if (newAlert.severity === "Critical") {
-              toast.error(`🚨 Critical Alert: ${newAlert.alertname}`, { duration: 5000 });
-            } else if (newAlert.severity === "High") {
-              toast(`⚠️ High Alert: ${newAlert.alertname}`, { duration: 4000, icon: "⚠️" });
-            }
+            // Toast notifications removed (critical & high alerts no longer shown)
           }
         }
       }
@@ -318,7 +314,7 @@ export const AlertProvider = ({ children }) => {
         serverStatuses,
         updateServerStatus,
         getServerStatus,
-        resolveAlertWithHost,   // 👈 EXPORT the new function
+        resolveAlertWithHost,
       }}
     >
       {children}

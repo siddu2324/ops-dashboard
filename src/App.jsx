@@ -2,7 +2,7 @@
 import { lazy, Suspense, useState, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { NAV } from "./constants/navigation";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
@@ -16,7 +16,7 @@ import { AlertProvider } from "./context/AlertContext";
 import { logAction } from "./services/auditService";
 
 // ---- Lazy load pages ----
-const HomePage = lazy(() => import("./pages/HomePage"));
+// ✅ HomePage import removed – no longer needed
 const DashboardListPage = lazy(() => import("./pages/DashboardListPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ServersPage = lazy(() => import("./pages/ServersPage"));
@@ -196,7 +196,7 @@ const PLACEHOLDER_DATA = {
 
 // ---- Map page names to components ----
 const PAGES = {
-  Home: HomePage,
+  Home: NOCDashboard, // ✅ changed from HomePage to NOCDashboard
   Dashboards: DashboardListPage,
   DashboardView: DashboardPage,
   Servers: ServersPage,
@@ -239,7 +239,7 @@ const PAGES = {
   "Oracle_Historical Performance_Dashboard": OracleHistoricalPerformance,
   // ---- Firewall ----
   "Firewall Dashboard": FirewallDashboard,
-  "Firewall": FirewallDashboard,   // 👈 added for sidebar navigation
+  "Firewall": FirewallDashboard,
   "Real-time_Firewall info": FirewallRealTimeInfo,
   "Real-time_Firewall Interface status": FirewallRealTimeInterfaceStatus,
   "Real-time_Firewall Service": FirewallRealTimeService,
@@ -282,7 +282,7 @@ function DashboardLayout() {
     return localStorage.getItem("defaultPage") || "Dashboards";
   });
 
-  const NAV_VERSION = "1.7";   // 👈 bumped to force refresh
+  const NAV_VERSION = "1.7";
   const [navItems, setNavItems] = useState(() => {
     const saved = localStorage.getItem("navItems");
     const savedVersion = localStorage.getItem("navItemsVersion");
@@ -411,11 +411,8 @@ function DashboardLayout() {
                 </div>
               }
             >
-              {active === "Home" ? (
-                <HomePage go={go} />
-              ) : (
-                <Page name={active} section={section} go={go} active={active} />
-              )}
+              {/* ✅ Removed the Home ternary – always use Page */}
+              <Page name={active} section={section} go={go} active={active} />
             </Suspense>
           </ErrorBoundary>
         </main>
@@ -440,17 +437,6 @@ export default function App() {
   return (
     <WebSocketProvider>
       <AlertProvider>
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: "var(--color-panel)",
-              color: "var(--color-text)",
-              border: "1px solid var(--color-border)",
-              fontFamily: "var(--font-sans)",
-            },
-          }}
-        />
         <Routes>
           <Route path="/login" element={<PublicRoute />} />
           <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>} />

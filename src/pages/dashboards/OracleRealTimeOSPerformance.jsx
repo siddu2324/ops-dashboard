@@ -10,7 +10,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "Unavailable by ICMP ping",
     severity: "Critical",
-    duration: "24d 6h",
+    duration: "13h",           // was "24d 6h" → changed to hour-only >10h
     update: "Update",
     actions: "",
   },
@@ -22,7 +22,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "Zabbix agent is not available (for 3m)",
     severity: "High",
-    duration: "1y 7M 13d",
+    duration: "15h",           // was "1y 7M 13d" → hour-only
     update: "Update",
     actions: "5",
   },
@@ -34,7 +34,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "sda: Disk read/write request responses are too high (read > 20 ms for 15m or write > 20 ms for 15m)",
     severity: "High",
-    duration: "1y 7M 23d",
+    duration: "17h",           // was "1y 7M 23d"
     update: "Update",
     actions: "",
   },
@@ -46,7 +46,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "sdb: Disk read/write request responses are too high (read > 20 ms for 15m or write > 20 ms for 15m)",
     severity: "High",
-    duration: "1y 7M 23d",
+    duration: "19h",           // was "1y 7M 23d"
     update: "Update",
     actions: "",
   },
@@ -58,7 +58,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "High memory utilization (>90% for 5m)",
     severity: "High",
-    duration: "1y 7M 23d",
+    duration: "21h",           // was "1y 7M 23d"
     update: "Update",
     actions: "2",
   },
@@ -70,7 +70,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "High memory utilization (>90% for 5m)",
     severity: "High",
-    duration: "1y 11M 25d",
+    duration: "23h",           // was "1y 11M 25d"
     update: "Update",
     actions: "1",
   },
@@ -82,7 +82,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "System time is out of sync (diff with Zabbix server > 60s)",
     severity: "High",
-    duration: "2y 3M 6d",
+    duration: "25h",           // was "2y 3M 6d"
     update: "Update",
     actions: "",
   },
@@ -94,7 +94,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "Oracle TBS 'SYSAUX' namespace usage is too high (over 95% for 5m)",
     severity: "High",
-    duration: "2y 8M 6d",
+    duration: "27h",           // was "2y 8M 6d"
     update: "Update",
     actions: "✓",
   },
@@ -106,7 +106,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "Oracle: Zabbix account will expire soon (under 7 days)",
     severity: "High",
-    duration: "2y 8M 9d",
+    duration: "28h",           // was "2y 8M 9d"
     update: "Update",
     actions: "",
   },
@@ -118,7 +118,7 @@ const problemsData = [
     host: "VITZBXORACLE_192.168.2.164",
     problem: "Oracle: Total PGA usage is too high (over 90% for 5 min)",
     severity: "High",
-    duration: "2y 9M 3d",
+    duration: "30h",           // was "2y 9M 3d"
     update: "Update",
     actions: "",
   },

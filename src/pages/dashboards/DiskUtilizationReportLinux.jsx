@@ -1,8 +1,9 @@
 // src/pages/dashboards/DiskUtilizationReportLinux.jsx
 import { useState } from "react";
 import Card from "../../components/common/Card";
-import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import { X, Clock, AlertCircle, ChevronRight, Download } from "lucide-react"; // ✅ added Download
 import { serverInventory, generateServerMetrics } from "../../data/servers";
+import { exportToCSV } from "../../utils/exportCSV"; // ✅ new import
 
 // ----- Filter Linux servers and generate disk data -----
 const linuxServers = serverInventory.filter(s => s.os && (s.os.includes("Linux") || s.os.includes("Ubuntu") || s.os === "Linux"));
@@ -391,9 +392,31 @@ export default function DiskUtilizationReportLinux() {
     setProblems([]);
   };
 
+  // ✅ NEW: Export CSV handler
+  const handleExportCSV = () => {
+    const exportData = diskDataLinux.map((row) => ({
+      Hostname: row.hostname,
+      IP: row.ip,
+      "Disk MIN (%)": row.min,
+      "Disk AVG (%)": row.avg,
+      "Disk MAX (%)": row.max,
+    }));
+    exportToCSV(exportData, "Disk_Utilization_Report_Linux.csv");
+  };
+
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-[var(--color-text)]">Disk Utilization</h2>
+      {/* ✅ Updated header with Export CSV button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-[var(--color-text)]">Disk Utilization</h2>
+        <button
+          onClick={handleExportCSV}
+          className="px-3 py-1.5 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-80 transition flex items-center gap-2"
+        >
+          <Download size={14} />
+          Export CSV
+        </button>
+      </div>
       <Card>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">

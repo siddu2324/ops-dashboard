@@ -1,9 +1,10 @@
 // src/pages/dashboards/CpuLoadReportLinux.jsx
 import { useState } from "react";
 import Card from "../../components/common/Card";
-import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import { X, Clock, AlertCircle, ChevronRight, Download } from "lucide-react"; // ✅ added Download
 import { serverInventory } from "../../data/servers";
 import { useAlerts } from "../../context/AlertContext";
+import { exportToCSV } from "../../utils/exportCSV"; // ✅ new import
 
 export default function CpuLoadReportLinux() {
   const { serverStatuses } = useAlerts();
@@ -27,6 +28,17 @@ export default function CpuLoadReportLinux() {
       status: statusData?.status || "up",
     };
   });
+
+  // Helper: random duration between 1 and 72 hours, formatted as "Xd Xh" or just "Xh"
+  const randomDuration = () => {
+    const totalHours = Math.floor(Math.random() * 72) + 1; // 1 to 72 hours
+    if (totalHours < 24) {
+      return `${totalHours}h`;
+    }
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
+    return hours === 0 ? `${days}d` : `${days}d ${hours}h`;
+  };
 
   // Generate problems based on actual server status
   const generateProblemsForHost = (hostname, status, statusData) => {
@@ -71,7 +83,7 @@ export default function CpuLoadReportLinux() {
       info: problemText,
       host: hostname,
       problem: problemText,
-      duration: status === "up" ? "No issues" : "Just now",
+      duration: status === "up" ? "No issues" : randomDuration(),
       update: status === "up" ? "N/A" : "Update",
       actions: "",
       detail: detail,
@@ -95,6 +107,19 @@ export default function CpuLoadReportLinux() {
     setModalOpen(false);
     setSelectedHost(null);
     setProblems([]);
+  };
+
+  // ✅ NEW: Export CSV handler
+  const handleExportCSV = () => {
+    const exportData = cpuDataLinux.map((row) => ({
+      Hostname: row.hostname,
+      IP: row.ip,
+      "CPU MIN (%)": row.min,
+      "CPU AVG (%)": row.avg,
+      "CPU MAX (%)": row.max,
+      Status: row.status,
+    }));
+    exportToCSV(exportData, "CPU_Load_Report_Linux.csv");
   };
 
   // ---- Problem Detail Modal (unchanged) ----
@@ -241,7 +266,17 @@ export default function CpuLoadReportLinux() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-[var(--color-text)]">CPU Utilization</h2>
+      {/* ✅ Updated header with Export CSV button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-[var(--color-text)]">CPU Utilization</h2>
+        <button
+          onClick={handleExportCSV}
+          className="px-3 py-1.5 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-80 transition flex items-center gap-2"
+        >
+          <Download size={14} />
+          Export CSV
+        </button>
+      </div>
       <Card>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
