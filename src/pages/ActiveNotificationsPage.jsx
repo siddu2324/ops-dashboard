@@ -1,20 +1,25 @@
+// src/pages/ActiveNotificationsPage.jsx
 import { useState } from "react";
 import { Search, ChevronDown, ChevronRight, Bell } from "lucide-react";
 import { useAlerts } from "../context/AlertContext";
 
-export default function ActiveNotificationsPage() {
-  const { alerts, resolveAlert, deleteAlert } = useAlerts(); // get from context
+export default function ActiveNotificationsPage({ go }) {
+  const { alerts, resolveAlert, deleteAlert } = useAlerts();
   const [searchTerm, setSearchTerm] = useState("");
   const [groupBy, setGroupBy] = useState("alertname,grafana_folder");
   const [contactPoint, setContactPoint] = useState("all");
   const [stateFilter, setStateFilter] = useState("active");
   const [expandedId, setExpandedId] = useState(null);
 
-  // Filter only active alerts (state === "active" or similar)
-  // Assuming alerts have a 'state' field. If not, adjust.
+  // Navigate to detail page
+  const openAlertDetail = (id) => {
+    localStorage.setItem("selectedAlertId", String(id));
+    if (go) go("Alert Detail");
+  };
+
+  // Filter active alerts
   const activeAlerts = alerts.filter((a) => a.state === "active");
 
-  // Unique contact points from the filtered list
   const contactPoints = [
     "all",
     ...new Set(activeAlerts.map((n) => n.contactPoint).filter(Boolean)),
@@ -156,14 +161,17 @@ export default function ActiveNotificationsPage() {
                 key={notif.id}
                 className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg overflow-hidden hover:border-[var(--color-accent)] transition"
               >
-                {/* Card header (clickable to expand) */}
+                {/* Card header - click to expand */}
                 <div
-                  onClick={() => toggleExpand(notif.id)}
                   className="p-4 cursor-pointer hover:bg-[var(--color-panel-alt)] transition"
                 >
-                  <div className="space-y-2">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                  <div className="flex items-start justify-between">
+                    {/* Left part: click to expand */}
+                    <div
+                      className="flex-1"
+                      onClick={() => toggleExpand(notif.id)}
+                    >
+                      <div className="space-y-2">
                         <div className="text-sm text-[var(--color-text)] font-medium">
                           <span className="text-[var(--color-muted)]">alertname</span>{" "}
                           {notif.alertname || notif.name}
@@ -172,19 +180,32 @@ export default function ActiveNotificationsPage() {
                           <span className="text-[var(--color-muted)]">grafana_folder</span>{" "}
                           {notif.grafana_folder || notif.folder || "—"}
                         </div>
-                      </div>
-                      <div className="text-xs text-[var(--color-faint)] bg-[var(--color-panel-alt)] px-2 py-1 rounded border border-[var(--color-border)] whitespace-nowrap">
-                        {notif.alertCount || 1} alert: {notif.activeCount || 1} active
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-xs text-[var(--color-muted)]">
+                            <span>Delivered to</span>
+                            <span className="text-[var(--color-text)] font-medium">
+                              {notif.contactPoint || "Unknown"}
+                            </span>
+                          </div>
+                          <div className="text-xs text-[var(--color-faint)] bg-[var(--color-panel-alt)] px-2 py-1 rounded border border-[var(--color-border)] whitespace-nowrap">
+                            {notif.alertCount || 1} alert: {notif.activeCount || 1} active
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-xs text-[var(--color-muted)]">
-                        <span>Delivered to</span>
-                        <span className="text-[var(--color-text)] font-medium">
-                          {notif.contactPoint || "Unknown"}
-                        </span>
-                      </div>
-                      <div className="text-[var(--color-muted)]">
+
+                    {/* Right side: Details button + expand chevron */}
+                    <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAlertDetail(notif.id);
+                        }}
+                        className="text-xs text-[var(--color-accent)] hover:underline"
+                      >
+                        Details
+                      </button>
+                      <div onClick={() => toggleExpand(notif.id)}>
                         {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                       </div>
                     </div>

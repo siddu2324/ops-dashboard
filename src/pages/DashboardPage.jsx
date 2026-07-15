@@ -62,7 +62,7 @@ const generateEvents = (count = 8) => {
 };
 
 // ---------- Default Dashboard Content ----------
-const DefaultDashboardContent = () => {
+const DefaultDashboardContent = ({ go }) => {
   const { activeAlertList, activeAlertCount, newAlertCount, resetNewAlertCount } = useAlerts();
   const [events, setEvents] = useState(generateEvents(8));
 
@@ -88,6 +88,11 @@ const DefaultDashboardContent = () => {
   }, []);
 
   const recentAlerts = activeAlertList.slice(-5).reverse();
+
+  const openAlertDetail = (id) => {
+    localStorage.setItem("selectedAlertId", String(id));
+    go("Alert Detail");
+  };
 
   return (
     <div className="grid gap-4">
@@ -135,7 +140,11 @@ const DefaultDashboardContent = () => {
         {recentAlerts.length === 0 ? <div className="text-center py-4 text-[var(--color-muted)] text-sm">No recent alerts</div> :
           <div className="grid gap-2">
             {recentAlerts.map((a) => (
-              <div key={a.id} className="flex items-center gap-3 py-1">
+              <div
+                key={a.id}
+                onClick={() => openAlertDetail(a.id)}
+                className="flex items-center gap-3 py-1 cursor-pointer hover:bg-[var(--color-panel-alt)] rounded px-2 transition"
+              >
                 <StatusDot state={a.state === "active" ? "crit" : "ok"} />
                 <span className="text-[var(--color-text)] text-sm flex-1">{a.grafana_folder}</span>
                 <span className="text-[var(--color-muted)] text-xs">{a.contactPoint}</span>
@@ -206,7 +215,6 @@ export default function DashboardPage({ go, active }) {
   const [dashboardName, setDashboardName] = useState("Main Dashboard");
   const [showBack, setShowBack] = useState(false);
 
-  // Re‑evaluate whenever the active page changes
   useEffect(() => {
     const id = localStorage.getItem("selectedDashboard");
     if (id) {

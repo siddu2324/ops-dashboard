@@ -14,6 +14,7 @@ import {
   Plug,
   Bell,
   LayoutDashboard,
+  AppWindow, // icon for Applications
 } from "lucide-react";
 
 export const NAV = [
@@ -35,7 +36,13 @@ export const NAV = [
     icon: Server,
     children: ["Servers", "Kubernetes", "Docker", "VMware", "Cloud"],
   },
-  // ---- Observability removed ----
+  // ---- Applications group ----
+  {
+    id: "applications",
+    label: "Applications",
+    icon: AppWindow,
+    children: ["IIS", "Exchange"],
+  },
   {
     id: "operations",
     label: "Operations",

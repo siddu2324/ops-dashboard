@@ -17,8 +17,8 @@ import { logAction } from "./services/auditService";
 
 // ---- Lazy load pages ----
 const HomePage = lazy(() => import("./pages/HomePage"));
-const DashboardListPage = lazy(() => import("./pages/DashboardListPage"));   // ✅ new list page
-const DashboardPage = lazy(() => import("./pages/DashboardPage"));          // view page
+const DashboardListPage = lazy(() => import("./pages/DashboardListPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ServersPage = lazy(() => import("./pages/ServersPage"));
 const KubernetesPage = lazy(() => import("./pages/KubernetesPage"));
 const DockerPage = lazy(() => import("./pages/DockerPage"));
@@ -58,7 +58,14 @@ const FirewallRealTimeInterfaceStatus = lazy(() => import("./pages/dashboards/Fi
 const FirewallRealTimeService = lazy(() => import("./pages/dashboards/FirewallRealTimeService"));
 const FirewallHistoricalPerformance = lazy(() => import("./pages/dashboards/FirewallHistoricalPerformance"));
 const NOCDashboard = lazy(() => import("./pages/dashboards/NOCDashboard"));
-const BangaloreDashboard = lazy(() => import("./pages/dashboards/BangaloreDashboard"));  // ✅ added
+const BangaloreDashboard = lazy(() => import("./pages/dashboards/BangaloreDashboard"));
+
+// ---- Application pages ----
+const IISPage = lazy(() => import("./pages/IISPage"));
+const ExchangePage = lazy(() => import("./pages/ExchangePage"));   // ✅ added
+
+// ---- Alert detail page ----
+const AlertDetailPage = lazy(() => import("./pages/AlertDetailPage"));
 
 // ---- Alerting pages ----
 const AlertRulesPage = lazy(() => import("./pages/AlertRulesPage"));
@@ -67,9 +74,8 @@ const SilencesPage = lazy(() => import("./pages/SilencesPage"));
 const ActiveNotificationsPage = lazy(() => import("./pages/ActiveNotificationsPage"));
 const AlertingSettingsPage = lazy(() => import("./pages/AlertingSettingsPage"));
 
-// ---- Placeholder data (removed entries for pages with dedicated components) ----
+// ---- Placeholder data ----
 const PLACEHOLDER_DATA = {
-  // Infrastructure
   Kubernetes: {
     title: "Kubernetes",
     description: "Everything running under your control. No kubernetes configured yet.",
@@ -175,13 +181,23 @@ const PLACEHOLDER_DATA = {
     description: "Manage teams and their members.",
     actionText: "Manage Teams",
   },
+  IIS: {
+    title: "IIS",
+    description: "Manage your IIS servers and application pools.",
+    actionText: "Set up IIS monitoring",
+  },
+  Exchange: {
+    title: "Exchange",
+    description: "Monitor your Exchange servers and mail flow.",
+    actionText: "Set up Exchange monitoring",
+  },
 };
 
 // ---- Map page names to components ----
 const PAGES = {
   Home: HomePage,
-  Dashboards: DashboardListPage,      // ✅ list of dashboards
-  DashboardView: DashboardPage,       // ✅ individual dashboard view
+  Dashboards: DashboardListPage,
+  DashboardView: DashboardPage,
   Servers: ServersPage,
   Kubernetes: KubernetesPage,
   Docker: DockerPage,
@@ -209,26 +225,30 @@ const PAGES = {
   Teams: TeamsPage,
   Correlations: CorrelationsPage,
   Authentication: AuthenticationPage,
-  // ---- Alerting mappings ----
+  // ---- Alerting ----
   "Alert rules": AlertRulesPage,
   "Notification configuration": NotificationConfigPage,
   Silences: SilencesPage,
   "Active notifications": ActiveNotificationsPage,
   "Alerting Settings": AlertingSettingsPage,
-  // ---- Oracle drill‑down pages ----
+  // ---- Oracle ----
   "Oracle Monitoring": OracleMonitoring,
   "Real-time_OS Performance": OracleRealTimeOSPerformance,
   "Oracle_Historical Performance_Dashboard": OracleHistoricalPerformance,
-  // ---- Firewall drill‑down pages ----
+  // ---- Firewall ----
   "Firewall Dashboard": FirewallDashboard,
   "Real-time_Firewall info": FirewallRealTimeInfo,
   "Real-time_Firewall Interface status": FirewallRealTimeInterfaceStatus,
   "Real-time_Firewall Service": FirewallRealTimeService,
   "Firewall_Historical Performance": FirewallHistoricalPerformance,
-  // ---- NOC Dashboard ----
+  // ---- NOC & Bangalore ----
   "NOC Dashboard": NOCDashboard,
-  // ---- Bangalore Dashboard ----
-  "Bangalore Dashboard": BangaloreDashboard,   // ✅ added
+  "Bangalore Dashboard": BangaloreDashboard,
+  // ---- Applications ----
+  IIS: IISPage,
+  Exchange: ExchangePage,   // ✅ mapped
+  // ---- Alert Detail ----
+  "Alert Detail": AlertDetailPage,
 };
 
 // ---- Fallback UI ----
@@ -255,13 +275,11 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 
 // ---- Dashboard Layout ----
 function DashboardLayout() {
-  // Read default page from localStorage, fallback to "Dashboards"
   const [active, setActive] = useState(() => {
     return localStorage.getItem("defaultPage") || "Dashboards";
   });
 
-  // Nav items with versioning
-  const NAV_VERSION = "1.3";   // ✅ kept at 1.3 (or bump to 1.4 if needed)
+  const NAV_VERSION = "1.6";   // bumped to refresh sidebar
   const [navItems, setNavItems] = useState(() => {
     const saved = localStorage.getItem("navItems");
     const savedVersion = localStorage.getItem("navItemsVersion");
@@ -274,8 +292,6 @@ function DashboardLayout() {
   });
 
   const [openGroups, setOpenGroups] = useState({ monitoring: true });
-
-  // Persist sidebar collapse state
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
     return saved === "true";
@@ -285,18 +301,14 @@ function DashboardLayout() {
     localStorage.setItem("sidebarCollapsed", JSON.stringify(collapsed));
   }, [collapsed]);
 
-  // Mobile sidebar state
   const [mobileOpen, setMobileOpen] = useState(false);
   const toggleMobile = () => setMobileOpen(!mobileOpen);
 
-  // ---- Helper to find the parent section for nested nav ----
   const findSection = (items, target) => {
     for (const item of items) {
-      // Direct child
       if (item.children && item.children.includes(target)) {
         return item.label;
       }
-      // Nested child
       if (item.children && Array.isArray(item.children)) {
         for (const child of item.children) {
           if (typeof child === 'object' && child.children && child.children.includes(target)) {
@@ -308,7 +320,6 @@ function DashboardLayout() {
     return "Home";
   };
 
-  // Navigate to a page
   const go = (item, groupId) => {
     setActive(item);
     if (groupId) {
@@ -316,7 +327,6 @@ function DashboardLayout() {
     }
   };
 
-  // Add/remove sidebar items (admin only)
   const addMenuItem = (groupId) => {
     const name = prompt(`Add item to ${groupId}`);
     if (!name) return;
@@ -350,7 +360,6 @@ function DashboardLayout() {
 
   return (
     <div className="flex h-screen w-full bg-[var(--color-bg)] font-sans">
-      {/* Sidebar with overlay on mobile */}
       <div
         className={`
           fixed inset-y-0 left-0 z-30 transform transition-transform duration-300 ease-in-out
@@ -372,7 +381,6 @@ function DashboardLayout() {
         />
       </div>
 
-      {/* Overlay background when mobile sidebar is open */}
       {mobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-20 lg:hidden"
@@ -403,7 +411,6 @@ function DashboardLayout() {
               {active === "Home" ? (
                 <HomePage go={go} />
               ) : (
-                // ✅ Pass `active` as a prop to the rendered page
                 <Page name={active} section={section} go={go} active={active} />
               )}
             </Suspense>
