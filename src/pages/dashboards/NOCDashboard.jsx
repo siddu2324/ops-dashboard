@@ -19,9 +19,9 @@ import IndiaMap from "../../assets/india-map.png"; // Step 2 – Import the imag
 
 // Step 2 – Define city coordinates
 const cityCoordinates = {
-  Delhi:   { left: "33.5%", top: "15%" },
-  Mumbai:  { left: "26%",  top: "52%" },
-  Bangalore: { left: "33%", top: "86%" },
+  Delhi:   { left: "40%", top: "43%" },
+  Mumbai:  { left: "35%",  top: "57%" },
+  Bangalore: { left: "41%", top: "70%" },
 };
 
 // Date Picker Component

@@ -34,7 +34,7 @@ export const NAV = [
     id: "infrastructure",
     label: "Infrastructure",
     icon: Server,
-    children: ["Servers", "Kubernetes", "Docker", "VMware", "Cloud"],
+    children: ["Servers", "Kubernetes", "Docker", "VMware", "Cloud", "Firewall"], // 👈 added "Firewall"
   },
   // ---- Applications group ----
   {

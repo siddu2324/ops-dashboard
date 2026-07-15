@@ -62,7 +62,7 @@ const BangaloreDashboard = lazy(() => import("./pages/dashboards/BangaloreDashbo
 
 // ---- Application pages ----
 const IISPage = lazy(() => import("./pages/IISPage"));
-const ExchangePage = lazy(() => import("./pages/ExchangePage"));   // ✅ added
+const ExchangePage = lazy(() => import("./pages/ExchangePage"));
 
 // ---- Alert detail page ----
 const AlertDetailPage = lazy(() => import("./pages/AlertDetailPage"));
@@ -237,6 +237,7 @@ const PAGES = {
   "Oracle_Historical Performance_Dashboard": OracleHistoricalPerformance,
   // ---- Firewall ----
   "Firewall Dashboard": FirewallDashboard,
+  "Firewall": FirewallDashboard,   // 👈 added for sidebar navigation
   "Real-time_Firewall info": FirewallRealTimeInfo,
   "Real-time_Firewall Interface status": FirewallRealTimeInterfaceStatus,
   "Real-time_Firewall Service": FirewallRealTimeService,
@@ -246,7 +247,7 @@ const PAGES = {
   "Bangalore Dashboard": BangaloreDashboard,
   // ---- Applications ----
   IIS: IISPage,
-  Exchange: ExchangePage,   // ✅ mapped
+  Exchange: ExchangePage,
   // ---- Alert Detail ----
   "Alert Detail": AlertDetailPage,
 };
@@ -279,7 +280,7 @@ function DashboardLayout() {
     return localStorage.getItem("defaultPage") || "Dashboards";
   });
 
-  const NAV_VERSION = "1.6";   // bumped to refresh sidebar
+  const NAV_VERSION = "1.7";   // 👈 bumped to force refresh
   const [navItems, setNavItems] = useState(() => {
     const saved = localStorage.getItem("navItems");
     const savedVersion = localStorage.getItem("navItemsVersion");
