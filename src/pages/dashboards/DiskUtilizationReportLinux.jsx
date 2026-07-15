@@ -2,33 +2,23 @@
 import { useState } from "react";
 import Card from "../../components/common/Card";
 import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import { serverInventory, generateServerMetrics } from "../../data/servers";
 
-// Helper to generate realistic disk utilization stats (in percentage)
-const generateDiskStats = () => {
-  const min = Math.round(Math.random() * 30 + 10); // 10–40
-  const avg = Math.round(Math.random() * 30 + min + 10); // min+10 to min+40
-  const max = Math.round(Math.random() * 20 + avg + 5); // avg+5 to avg+25, capped at 100
-  return { min, avg, max: Math.min(max, 100) };
-};
+// ----- Filter Linux servers and generate disk data -----
+const linuxServers = serverInventory.filter(s => s.os && (s.os.includes("Linux") || s.os.includes("Ubuntu") || s.os === "Linux"));
 
-// Linux Disk data with generated stats
-const diskDataLinux = [
-  { hostname: "VITBLRSRVZBC01", ip: "192.168.6.101" },
-  { hostname: "VITBLRSRVZDB01", ip: "192.168.2.111" },
-  { hostname: "Docker", ip: "192.168.2.73" },
-  { hostname: "VITZBOXORACLE_192.168.2.164", ip: "192.168.2.164" },
-  { hostname: "ASPL Pulse", ip: "192.168.2.111" },
-  { hostname: "zbxkuibectl-JMX Tomcat", ip: "192.168.2.115" },
-  { hostname: "Database Server", ip: "192.168.2.111" },
-  { hostname: "vitblruat03", ip: "192.168.2.192" },
-  { hostname: "SPLUNKTEST", ip: "192.168.4.172" },
-  { hostname: "photon_machine", ip: "192.168.4.157" },
-].map(host => {
-  const stats = generateDiskStats();
-  return { ...host, ...stats };
+const diskDataLinux = linuxServers.map(server => {
+  const metrics = generateServerMetrics(server.id);
+  return {
+    hostname: server.hostname,
+    ip: server.ip,
+    min: metrics.disk,
+    avg: metrics.disk,
+    max: metrics.disk,
+  };
 });
 
-// Generate mock problems for a host
+// ----- Generate mock problems for a host (Linux flavor) -----
 const generateProblemsForHost = (hostname) => {
   const problemTemplates = [
     { 

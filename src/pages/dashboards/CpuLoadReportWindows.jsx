@@ -2,33 +2,23 @@
 import { useState } from "react";
 import Card from "../../components/common/Card";
 import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import { serverInventory, generateServerMetrics } from "../../data/servers";
 
-// Helper to generate realistic CPU stats for a host
-const generateCpuStats = () => {
-  const min = Math.round(Math.random() * 20 + 5); // 5–25
-  const avg = Math.round(Math.random() * 30 + min + 10); // min+10 to min+40
-  const max = Math.round(Math.random() * 20 + avg + 5); // avg+5 to avg+25, capped at 100
-  return { min, avg, max: Math.min(max, 100) };
-};
+// ----- Filter Windows servers and generate CPU data -----
+const windowsServers = serverInventory.filter(s => s.os && s.os.includes("Windows"));
 
-// Windows CPU data (IPs and hostnames) with generated stats
-const cpuDataWindows = [
-  { hostname: "ASPL_VITBLRLABPWIO2", ip: "192.168.2.113" },
-  { hostname: "ASPL_DESKTOP-2MS825A", ip: "192.168.2.116" },
-  { hostname: "ASPL_VITBLRSRVTS16", ip: "192.168.6.68" },
-  { hostname: "VITBLRSRVSRHPRNT", ip: "192.168.4.21" },
-  { hostname: "VITSRVANTV02", ip: "192.168.4.64" },
-  { hostname: "VITBLRSRVPW01", ip: "192.168.6.90" },
-  { hostname: "VITBLRSRVAPP01", ip: "192.168.4.104" },
-  { hostname: "VITBLRSRVAPP02", ip: "192.168.4.105" },
-  { hostname: "VITBLRSRVPDB02", ip: "192.168.4.108" },
-  { hostname: "VITBLRSRVTAIL02", ip: "192.168.4.41" },
-].map(host => {
-  const stats = generateCpuStats();
-  return { ...host, ...stats };
+const cpuDataWindows = windowsServers.map(server => {
+  const metrics = generateServerMetrics(server.id);
+  return {
+    hostname: server.hostname,
+    ip: server.ip,
+    min: metrics.cpu,
+    avg: metrics.cpu,
+    max: metrics.cpu,
+  };
 });
 
-// Generate mock problems for a host (unchanged)
+// ----- Generate mock problems for a host (Windows flavor) -----
 const generateProblemsForHost = (hostname) => {
   const problemTemplates = [
     { 
@@ -174,7 +164,7 @@ const generateProblemsForHost = (hostname) => {
   }));
 };
 
-// ---- Problem Detail Modal ----
+// ---- Problem Detail Modal (unchanged) ----
 const ProblemDetailModal = ({ isOpen, onClose, problem }) => {
   if (!isOpen || !problem) return null;
 
@@ -262,7 +252,7 @@ const ProblemDetailModal = ({ isOpen, onClose, problem }) => {
   );
 };
 
-// ---- Host Problems Modal ----
+// ---- Host Problems Modal (unchanged) ----
 const HostProblemsModal = ({ isOpen, onClose, hostname, problems }) => {
   const [selectedProblem, setSelectedProblem] = useState(null);
 

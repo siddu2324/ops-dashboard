@@ -2,33 +2,23 @@
 import { useState } from "react";
 import Card from "../../components/common/Card";
 import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import { serverInventory, generateServerMetrics } from "../../data/servers";
 
-// Helper to generate realistic disk utilization stats (in percentage)
-const generateDiskStats = () => {
-  const min = Math.round(Math.random() * 30 + 10); // 10–40
-  const avg = Math.round(Math.random() * 30 + min + 10); // min+10 to min+40
-  const max = Math.round(Math.random() * 20 + avg + 5); // avg+5 to avg+25, capped at 100
-  return { min, avg, max: Math.min(max, 100) };
-};
+// ----- Filter Windows servers and generate disk data -----
+const windowsServers = serverInventory.filter(s => s.os && s.os.includes("Windows"));
 
-// Windows Disk data with generated stats
-const diskDataWindows = [
-  { hostname: "ASPL_VITBLRLABPWIO2", ip: "192.168.2.113" },
-  { hostname: "Oracle EBS Suite", ip: "192.168.2.114" },
-  { hostname: "zbxkubecit-JMX Tomcat", ip: "192.168.2.115" },
-  { hostname: "ASPL HO Demo proxy_192.168.4.190", ip: "192.168.4.190" },
-  { hostname: "VITBLRUATMSSQL", ip: "192.168.2.165" },
-  { hostname: "Mysql Server", ip: "192.168.2.111" },
-  { hostname: "MSSQL", ip: "192.168.2.172" },
-  { hostname: "Google URL", ip: "127.0.0.1" },
-  { hostname: "ASPL Pulse", ip: "192.168.2.111" },
-  { hostname: "ASPL_DESKTOP-2MS825A", ip: "192.168.2.116" },
-].map(host => {
-  const stats = generateDiskStats();
-  return { ...host, ...stats };
+const diskDataWindows = windowsServers.map(server => {
+  const metrics = generateServerMetrics(server.id);
+  return {
+    hostname: server.hostname,
+    ip: server.ip,
+    min: metrics.disk,
+    avg: metrics.disk,
+    max: metrics.disk,
+  };
 });
 
-// Generate mock problems for a host
+// ----- Generate mock problems for a host (Windows flavor) -----
 const generateProblemsForHost = (hostname) => {
   const problemTemplates = [
     { 

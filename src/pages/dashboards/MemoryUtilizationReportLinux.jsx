@@ -2,33 +2,23 @@
 import { useState } from "react";
 import Card from "../../components/common/Card";
 import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import { serverInventory, generateServerMetrics } from "../../data/servers";
 
-// Helper to generate realistic memory utilization stats (in percentage)
-const generateMemoryStats = () => {
-  const min = Math.round(Math.random() * 30 + 15); // 15–45
-  const avg = Math.round(Math.random() * 30 + min + 10); // min+10 to min+40
-  const max = Math.round(Math.random() * 20 + avg + 5); // avg+5 to avg+25, capped at 100
-  return { min, avg, max: Math.min(max, 100) };
-};
+// ----- Filter Linux servers and generate memory data -----
+const linuxServers = serverInventory.filter(s => s.os && (s.os.includes("Linux") || s.os.includes("Ubuntu") || s.os === "Linux"));
 
-// Memory data with generated stats
-const memoryDataLinux = [
-  { ip: "192.168.6.101", hostname: "VITBLRSRVZBVXC01" },
-  { ip: "192.168.2.111", hostname: "VITBLRSRVZDB01" },
-  { ip: "192.168.2.73", hostname: "Docker" },
-  { ip: "192.168.2.164", hostname: "VITZBOXORACLE_192.168.2.164" },
-  { ip: "192.168.2.111", hostname: "ASPL_Pulse" },
-  { ip: "192.168.2.115", hostname: "zbxkuberc1-JMX Tomcat" },
-  { ip: "192.168.2.111", hostname: "Database Server" },
-  { ip: "192.168.2.192", hostname: "vitblruat03" },
-  { ip: "192.168.4.172", hostname: "SPLUNKTEST" },
-  { ip: "192.168.4.157", hostname: "photon_machine" },
-].map(host => {
-  const stats = generateMemoryStats();
-  return { ...host, ...stats };
+const memoryDataLinux = linuxServers.map(server => {
+  const metrics = generateServerMetrics(server.id);
+  return {
+    ip: server.ip,
+    hostname: server.hostname,
+    min: metrics.memory,
+    avg: metrics.memory,
+    max: metrics.memory,
+  };
 });
 
-// Generate mock problems for a host
+// ----- Generate mock problems for a host (Linux flavor) -----
 const generateProblemsForHost = (hostname) => {
   const problemTemplates = [
     { 
@@ -174,7 +164,7 @@ const generateProblemsForHost = (hostname) => {
   }));
 };
 
-// ---- Problem Detail Modal ----
+// ---- Problem Detail Modal (unchanged) ----
 const ProblemDetailModal = ({ isOpen, onClose, problem }) => {
   if (!isOpen || !problem) return null;
 
@@ -262,7 +252,7 @@ const ProblemDetailModal = ({ isOpen, onClose, problem }) => {
   );
 };
 
-// ---- Host Problems Modal ----
+// ---- Host Problems Modal (unchanged) ----
 const HostProblemsModal = ({ isOpen, onClose, hostname, problems }) => {
   const [selectedProblem, setSelectedProblem] = useState(null);
 
