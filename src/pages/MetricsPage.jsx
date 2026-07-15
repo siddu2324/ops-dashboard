@@ -1,5 +1,5 @@
 // src/pages/MetricsPage.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Search,
   ChevronDown,
@@ -30,47 +30,6 @@ import TimePicker from "../components/common/TimePicker";
 import { useAlerts } from "../context/AlertContext";
 import { generateChartDataFromStatuses } from "../utils/dataGenerator";
 
-// ---------- Metric Names ----------
-// Add real server metrics to the list
-const metricNames = [
-  "cpu",
-  "memory",
-  "disk",
-  "go_gc_cycles_automatic_gc_cycles_total",
-  "go_gc_cycles_forced_gc_cycles_total",
-  // ... (keep all existing metrics, but we can shorten for brevity; full list from user)
-];
-
-// ---------- Prefix and suffix data (unchanged) ----------
-const prefixData = [
-  { prefix: "go", count: 74 },
-  { prefix: "prometheus", count: 229 },
-  { prefix: "node", count: 286 },
-  { prefix: "tempo", count: 123 },
-  { prefix: "tempodb", count: 23 },
-  { prefix: "process", count: 9 },
-  { prefix: "net", count: 6 },
-  { prefix: "traces", count: 5 },
-  { prefix: "scrape", count: 4 },
-  { prefix: "promhttp", count: 3 },
-  { prefix: "nginx", count: 2 },
-];
-
-const suffixData = [
-  { suffix: "total", count: 284 },
-  { suffix: "bytes", count: 92 },
-  { suffix: "count", count: 47 },
-  { suffix: "sum", count: 47 },
-  { suffix: "seconds", count: 35 },
-  { suffix: "bucket", count: 34 },
-  { suffix: "info", count: 15 },
-  { suffix: "inuse", count: 10 },
-  { suffix: "length", count: 8 },
-  { suffix: "InErrors", count: 6 },
-  { suffix: "clients", count: 5 },
-  { suffix: "series", count: 5 },
-];
-
 const timeRanges = [
   "All time",
   "Past 1m",
@@ -91,7 +50,6 @@ const groupByLabels = [
   "broadcast", "call", "cause",
 ];
 
-// ---------- Color palette ----------
 const COLORS = [
   "#22D3EE", "#F87171", "#FBBF24", "#34D399", "#A78BFA",
   "#F472B6", "#60A5FA", "#F59E0B", "#14B8A6", "#8B5CF6",
@@ -130,16 +88,65 @@ export default function MetricsPage() {
   const [chartData, setChartData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // ---------- Initialize with default metric "cpu" ----------
+  // ✅ Derive metric names from serverStatuses
+  const metricNames = useMemo(() => {
+    const metricsSet = new Set();
+    Object.values(serverStatuses).forEach((server) => {
+      if (server.metrics) {
+        Object.keys(server.metrics).forEach((key) => {
+          metricsSet.add(key);
+        });
+      }
+    });
+    // Fallback to default if no metrics found
+    if (metricsSet.size === 0) {
+      return ["cpu", "memory", "disk"];
+    }
+    return Array.from(metricsSet);
+  }, [serverStatuses]);
+
+  // Prefix data derived from metric names
+  const prefixData = useMemo(() => {
+    const prefixMap = {};
+    metricNames.forEach((name) => {
+      const parts = name.split('_');
+      if (parts.length > 0) {
+        const prefix = parts[0];
+        if (!prefixMap[prefix]) prefixMap[prefix] = 0;
+        prefixMap[prefix]++;
+      }
+    });
+    return Object.entries(prefixMap)
+      .map(([prefix, count]) => ({ prefix, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [metricNames]);
+
+  // Suffix data derived from metric names
+  const suffixData = useMemo(() => {
+    const suffixMap = {};
+    metricNames.forEach((name) => {
+      const parts = name.split('_');
+      if (parts.length > 0) {
+        const suffix = parts[parts.length - 1];
+        if (!suffixMap[suffix]) suffixMap[suffix] = 0;
+        suffixMap[suffix]++;
+      }
+    });
+    return Object.entries(suffixMap)
+      .map(([suffix, count]) => ({ suffix, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [metricNames]);
+
+  // Initialize with default metric
   useEffect(() => {
-    if (selectedMetrics.length === 0 && serverStatuses && Object.keys(serverStatuses).length > 0) {
-      const defaultMetric = "cpu";
+    if (selectedMetrics.length === 0 && metricNames.length > 0) {
+      const defaultMetric = metricNames.includes("cpu") ? "cpu" : metricNames[0];
+      setSelectedMetrics([defaultMetric]);
       const data = generateChartDataFromStatuses(serverStatuses, defaultMetric, 30);
       setChartData(data);
-      setSelectedMetrics([defaultMetric]);
       setQuery(`average(${defaultMetric})`);
     }
-  }, [serverStatuses, selectedMetrics.length]);
+  }, [metricNames, serverStatuses]);
 
   // Run query
   const runQuery = () => {
@@ -149,13 +156,14 @@ export default function MetricsPage() {
     }
     setIsLoading(true);
     setTimeout(() => {
-      // Try to extract a metric name from the query (simple heuristic)
       const words = query.split(/\s+/);
-      const metricName = words.find(w => metricNames.includes(w)) || "cpu";
+      const metricName = words.find(w => metricNames.includes(w)) || metricNames[0] || "cpu";
       if (serverStatuses && Object.keys(serverStatuses).length > 0) {
         const data = generateChartDataFromStatuses(serverStatuses, metricName, 30);
         setChartData(data);
-        setSelectedMetrics([metricName]);
+        if (!selectedMetrics.includes(metricName)) {
+          setSelectedMetrics([metricName]);
+        }
         toast.success(`Query executed: ${query}`);
       } else {
         toast.error("No server status data available");
@@ -165,10 +173,8 @@ export default function MetricsPage() {
     }, 500);
   };
 
-  // Handle time change
   const handleTimeChange = (time) => {
     toast.success(`Time range updated: ${time.range || time.from + " → " + time.to}`);
-    // Optionally refresh chart data based on time range
   };
 
   // Filter metrics
@@ -191,7 +197,6 @@ export default function MetricsPage() {
       let newSelected;
       if (isSelected) {
         newSelected = prev.filter((m) => m !== metric);
-        // Remove metric from chart data
         const updated = chartData.map((point) => {
           const { [metric]: removed, ...rest } = point;
           return rest;
@@ -199,24 +204,11 @@ export default function MetricsPage() {
         setChartData(updated);
       } else {
         newSelected = [...prev, metric];
-        // Add metric to chart data
         let newData = [];
         if (serverStatuses && Object.keys(serverStatuses).length > 0) {
-          // For real server metrics (cpu, memory, disk) – generate from statuses
-          if (metric === "cpu" || metric === "memory" || metric === "disk") {
-            const generated = generateChartDataFromStatuses(serverStatuses, metric, 30);
-            newData = generated;
-          } else {
-            // For other metrics, we can't generate real data, so generate dummy data
-            // But we can still show a placeholder
-            const now = Date.now();
-            newData = Array.from({ length: 30 }, (_, i) => ({
-              time: new Date(now - (30 - i) * 60000).toLocaleTimeString(),
-              [metric]: Math.floor(Math.random() * 100),
-            }));
-          }
+          const generated = generateChartDataFromStatuses(serverStatuses, metric, 30);
+          newData = generated;
         } else {
-          // Fallback to random data
           const now = Date.now();
           newData = Array.from({ length: 30 }, (_, i) => ({
             time: new Date(now - (30 - i) * 60000).toLocaleTimeString(),
@@ -249,7 +241,6 @@ export default function MetricsPage() {
     toast.success("All filters cleared");
   };
 
-  // Filter group toggle
   const FilterGroup = ({ title, open, onToggle, children }) => (
     <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
       <button
@@ -263,7 +254,6 @@ export default function MetricsPage() {
     </div>
   );
 
-  // Prepare chart data
   const chartDataPoints = chartData.length > 0 ? chartData : [];
 
   return (
@@ -572,7 +562,7 @@ export default function MetricsPage() {
         {/* Metrics list */}
         <div className="lg:col-span-1 bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg overflow-hidden">
           <div className="px-3 py-2 border-b border-[var(--color-border)] text-xs font-medium text-[var(--color-muted)] uppercase tracking-wider">
-            Metrics
+            Metrics ({filteredMetrics.length})
           </div>
           <div className="max-h-[400px] overflow-y-auto p-1 space-y-0.5">
             {filteredMetrics.length === 0 ? (

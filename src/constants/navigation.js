@@ -4,17 +4,14 @@ import {
   Activity,
   Server,
   Siren,
-  Bot,
-  BarChart3,
   Settings,
   UserCog,
   Database,
   Users,
-  Key,
   Plug,
   Bell,
   LayoutDashboard,
-  AppWindow, // icon for Applications
+  AppWindow,
 } from "lucide-react";
 
 export const NAV = [
@@ -34,20 +31,19 @@ export const NAV = [
     id: "infrastructure",
     label: "Infrastructure",
     icon: Server,
-    children: ["Servers", "Kubernetes", "Docker", "VMware", "Cloud", "Firewall"], // 👈 added "Firewall"
+    children: ["Servers", "Cloud", "Firewall"],
   },
-  // ---- Applications group ----
   {
     id: "applications",
     label: "Applications",
     icon: AppWindow,
-    children: ["IIS", "Exchange"],
+    children: ["IIS"],
   },
   {
     id: "operations",
     label: "Operations",
     icon: Siren,
-    children: ["Incidents", "RCA", "Automation"],
+    children: ["Incidents"],
   },
   {
     id: "alerting",
@@ -61,18 +57,7 @@ export const NAV = [
       "Alerting Settings",
     ],
   },
-  {
-    id: "ai",
-    label: "AI",
-    icon: Bot,
-    children: ["AI Assistant", "Root Cause", "Recommendations", "Capacity Planning"],
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    icon: BarChart3,
-    children: ["Executive Dashboard", "SLA", "Availability", "Capacity"],
-  },
+  // ❌ Reports section removed entirely
   {
     id: "administration",
     label: "Administration",

@@ -16,25 +16,22 @@ import { AlertProvider } from "./context/AlertContext";
 import { logAction } from "./services/auditService";
 
 // ---- Lazy load pages ----
-// ✅ HomePage import removed – no longer needed
 const DashboardListPage = lazy(() => import("./pages/DashboardListPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const ServersPage = lazy(() => import("./pages/ServersPage"));
-const KubernetesPage = lazy(() => import("./pages/KubernetesPage"));
-const DockerPage = lazy(() => import("./pages/DockerPage"));
-const VMwarePage = lazy(() => import("./pages/VMwarePage"));
+// ❌ Removed KubernetesPage, DockerPage, VMwarePage
 const LogsPage = lazy(() => import("./pages/LogsPage"));
 const CloudPage = lazy(() => import("./pages/CloudPage"));
 const TracesPage = lazy(() => import("./pages/TracesPage"));
 const AlertingPage = lazy(() => import("./pages/AlertingPage"));
-const AssistantPage = lazy(() => import("./pages/AssistantPage"));
+// ❌ Removed AssistantPage
 const GenericPage = lazy(() => import("./pages/GenericPage"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
 const ConnectionsPage = lazy(() => import("./pages/ConnectionsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PreferencesPage = lazy(() => import("./pages/PreferencesPage"));
 const IncidentsPage = lazy(() => import("./pages/IncidentsPage"));
-const RCAPage = lazy(() => import("./pages/RCAPage"));
+// ❌ Removed RCAPage
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 const StatisticsAndLicensing = lazy(() => import("./pages/StatisticsAndLicensing"));
 const DefaultPreferences = lazy(() => import("./pages/DefaultPreferences"));
@@ -50,9 +47,7 @@ const CorrelationsPage = lazy(() => import("./pages/CorrelationsPage"));
 const AuthenticationPage = lazy(() => import("./pages/AuthenticationPage"));
 
 // ---- Dashboard drill‑down pages ----
-const OracleMonitoring = lazy(() => import("./pages/dashboards/OracleMonitoring"));
-const OracleRealTimeOSPerformance = lazy(() => import("./pages/dashboards/OracleRealTimeOSPerformance"));
-const OracleHistoricalPerformance = lazy(() => import("./pages/dashboards/OracleHistoricalPerformance"));
+// ❌ Removed OracleMonitoring, OracleRealTimeOSPerformance, OracleHistoricalPerformance
 const FirewallDashboard = lazy(() => import("./pages/dashboards/FirewallDashboard"));
 const FirewallRealTimeInfo = lazy(() => import("./pages/dashboards/FirewallRealTimeInfo"));
 const FirewallRealTimeInterfaceStatus = lazy(() => import("./pages/dashboards/FirewallRealTimeInterfaceStatus"));
@@ -63,7 +58,7 @@ const BangaloreDashboard = lazy(() => import("./pages/dashboards/BangaloreDashbo
 
 // ---- Application pages ----
 const IISPage = lazy(() => import("./pages/IISPage"));
-const ExchangePage = lazy(() => import("./pages/ExchangePage"));
+// ❌ Removed ExchangePage
 
 // ---- Alert detail page ----
 const AlertDetailPage = lazy(() => import("./pages/AlertDetailPage"));
@@ -77,21 +72,8 @@ const AlertingSettingsPage = lazy(() => import("./pages/AlertingSettingsPage"));
 
 // ---- Placeholder data ----
 const PLACEHOLDER_DATA = {
-  Kubernetes: {
-    title: "Kubernetes",
-    description: "Everything running under your control. No kubernetes configured yet.",
-    actionText: "Set up Kubernetes",
-  },
-  Docker: {
-    title: "Docker",
-    description: "Manage your containers. No Docker hosts registered.",
-    actionText: "Add Docker host",
-  },
-  VMware: {
-    title: "VMware",
-    description: "Virtual machines under your control. No vCenter connected.",
-    actionText: "Connect vCenter",
-  },
+  // ❌ Removed Kubernetes, Docker, VMware, AI Assistant, Root Cause, Recommendations, Capacity Planning, Exchange
+  // ✅ Kept the ones that are still in the navigation
   Cloud: {
     title: "Cloud",
     description: "Your cloud infrastructure. No cloud accounts linked.",
@@ -126,26 +108,6 @@ const PLACEHOLDER_DATA = {
     title: "Automation",
     description: "Automate your workflows. No automation jobs defined.",
     actionText: "Define job",
-  },
-  "AI Assistant": {
-    title: "AI Assistant",
-    description: "Get intelligent recommendations. No queries yet.",
-    actionText: "Ask a question",
-  },
-  "Root Cause": {
-    title: "Root Cause",
-    description: "AI-powered root cause analysis. No data available.",
-    actionText: "Analyze now",
-  },
-  Recommendations: {
-    title: "Recommendations",
-    description: "Proactive recommendations for your infrastructure.",
-    actionText: "Generate recommendations",
-  },
-  "Capacity Planning": {
-    title: "Capacity Planning",
-    description: "Plan your resource usage. No predictions available.",
-    actionText: "Run forecast",
   },
   "Executive Dashboard": {
     title: "Executive Dashboard",
@@ -187,29 +149,21 @@ const PLACEHOLDER_DATA = {
     description: "Manage your IIS servers and application pools.",
     actionText: "Set up IIS monitoring",
   },
-  Exchange: {
-    title: "Exchange",
-    description: "Monitor your Exchange servers and mail flow.",
-    actionText: "Set up Exchange monitoring",
-  },
 };
 
 // ---- Map page names to components ----
 const PAGES = {
-  Home: NOCDashboard, // ✅ changed from HomePage to NOCDashboard
+  Home: NOCDashboard,
   Dashboards: DashboardListPage,
   DashboardView: DashboardPage,
   Servers: ServersPage,
-  Kubernetes: KubernetesPage,
-  Docker: DockerPage,
-  VMware: VMwarePage,
+  // ❌ Removed Kubernetes, Docker, VMware
   Logs: LogsPage,
   Traces: TracesPage,
   Alerting: AlertingPage,
   Cloud: CloudPage,
   Incidents: IncidentsPage,
-  RCA: RCAPage,
-  "AI Assistant": AssistantPage,
+  // ❌ Removed RCA, AI Assistant
   Users: UsersPage,
   Connections: ConnectionsPage,
   Profile: ProfilePage,
@@ -233,10 +187,7 @@ const PAGES = {
   Silences: SilencesPage,
   "Active notifications": ActiveNotificationsPage,
   "Alerting Settings": AlertingSettingsPage,
-  // ---- Oracle ----
-  "Oracle Monitoring": OracleMonitoring,
-  "Real-time_OS Performance": OracleRealTimeOSPerformance,
-  "Oracle_Historical Performance_Dashboard": OracleHistoricalPerformance,
+  // ❌ Removed Oracle mappings
   // ---- Firewall ----
   "Firewall Dashboard": FirewallDashboard,
   "Firewall": FirewallDashboard,
@@ -249,7 +200,7 @@ const PAGES = {
   "Bangalore Dashboard": BangaloreDashboard,
   // ---- Applications ----
   IIS: IISPage,
-  Exchange: ExchangePage,
+  // ❌ Removed Exchange
   // ---- Alert Detail ----
   "Alert Detail": AlertDetailPage,
 };
@@ -411,7 +362,6 @@ function DashboardLayout() {
                 </div>
               }
             >
-              {/* ✅ Removed the Home ternary – always use Page */}
               <Page name={active} section={section} go={go} active={active} />
             </Suspense>
           </ErrorBoundary>

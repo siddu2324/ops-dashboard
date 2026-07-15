@@ -19,18 +19,13 @@ import { useAlerts } from "../context/AlertContext";
 import { cpuSeries } from "../data/cpuSeries";
 import { reqSeries } from "../data/reqSeries";
 import HealthSummary from "../components/HealthSummary";
-import { defaultDashboards } from "../data/defaultDashboards"; // 👈 new import
-
-// --- Dashboard child components (unchanged) ---
 import MemoryUtilizationReport from "./dashboards/MemoryUtilizationReport";
 import MemoryUtilizationReportLinux from "./dashboards/MemoryUtilizationReportLinux";
 import CpuLoadReportWindows from "./dashboards/CpuLoadReportWindows";
 import CpuLoadReportLinux from "./dashboards/CpuLoadReportLinux";
 import DiskUtilizationReportWindows from "./dashboards/DiskUtilizationReportWindows";
 import DiskUtilizationReportLinux from "./dashboards/DiskUtilizationReportLinux";
-import OracleMonitoring from "./dashboards/OracleMonitoring";
-import OracleRealTimeOSPerformance from "./dashboards/OracleRealTimeOSPerformance";
-import OracleHistoricalPerformance from "./dashboards/OracleHistoricalPerformance";
+// ❌ Removed Oracle imports
 import FirewallDashboard from "./dashboards/FirewallDashboard";
 import FirewallRealTimeInfo from "./dashboards/FirewallRealTimeInfo";
 import FirewallRealTimeInterfaceStatus from "./dashboards/FirewallRealTimeInterfaceStatus";
@@ -38,6 +33,7 @@ import FirewallRealTimeService from "./dashboards/FirewallRealTimeService";
 import FirewallHistoricalPerformance from "./dashboards/FirewallHistoricalPerformance";
 import NOCDashboard from "./dashboards/NOCDashboard";
 import BangaloreDashboard from "./dashboards/BangaloreDashboard";
+import { X, AlertCircle, Clock } from "lucide-react";
 
 // ---------- Constants ----------
 const EVENT_NAMES = [
@@ -63,6 +59,110 @@ const generateEvents = (count = 8) => {
     count: Math.floor(1000 + Math.random() * 50000),
     lastTriggered: new Date(now - Math.random() * 3600000).toISOString(),
   }));
+};
+
+// ---- Problem Detail Modal (Auto-opened from Incidents) ----
+const ProblemDetailModal = ({ isOpen, onClose, problemData }) => {
+  if (!isOpen || !problemData) return null;
+
+  const { detail, hostname, problem, severity, time, duration } = problemData;
+
+  // If detail is missing, create a basic one
+  const detailData = detail || {
+    title: `${hostname} · ${problem}`,
+    source: "Infrastructure",
+    host: hostname,
+    service: "Server",
+    referenceId: `SRV-${hostname}-${Date.now()}`,
+    ip: "N/A",
+    confidence: "85%",
+    rootCause: `${hostname} is experiencing an issue: ${problem}. Please check the dashboard for more details.`,
+    metrics: ["Status: Active", `Host: ${hostname}`, `Severity: ${severity}`],
+    recommendation: "Review the system logs and take appropriate action based on the specific issue."
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+        <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+          <div className="flex items-center gap-3">
+            <AlertCircle size={20} className="text-[var(--color-crit)]" />
+            <div>
+              <h3 className="text-xl font-bold text-[var(--color-text)]">{detailData.title}</h3>
+              <div className="flex items-center gap-3 mt-0.5">
+                <span className="text-xs bg-[var(--color-panel-alt)] px-2 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-muted)]">
+                  {detailData.source}
+                </span>
+                <span className="text-xs text-[var(--color-muted)]">Host {detailData.host}</span>
+                <span className="text-xs text-[var(--color-muted)]">Service {detailData.service}</span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 rounded-xl hover:bg-[var(--color-border)]/10 transition flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="text-[var(--color-muted)]">As of {new Date().toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            <span className="text-xs font-mono text-[var(--color-faint)]">Reference ID {detailData.referenceId}</span>
+          </div>
+
+          <div className="bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-4">
+            <p className="text-sm text-[var(--color-text)]">
+              <span className="font-semibold">Problem:</span> {problem}
+            </p>
+            <p className="text-sm text-[var(--color-muted)] mt-1">
+              <span className="font-semibold">Host:</span> {hostname} | 
+              <span className="font-semibold ml-2">Severity:</span> {severity} | 
+              <span className="font-semibold ml-2">Duration:</span> {duration}
+            </p>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h4 className="text-sm font-semibold text-[var(--color-text)] uppercase tracking-wider">Root Cause Analysis</h4>
+              <span className="text-xs font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-2 py-0.5 rounded-full border border-[var(--color-accent)]/20">
+                {detailData.confidence} CONFIDENCE
+              </span>
+            </div>
+            <p className="text-sm text-[var(--color-text)] leading-relaxed">{detailData.rootCause}</p>
+            <ul className="mt-3 space-y-1">
+              {detailData.metrics.map((metric, i) => (
+                <li key={i} className="text-sm text-[var(--color-muted)] flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]"></span>
+                  {metric}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-[var(--color-text)] uppercase tracking-wider mb-2">Recommended Action</h4>
+            <div className="bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-4">
+              <p className="text-sm text-[var(--color-text)] leading-relaxed">{detailData.recommendation}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end p-4 border-t border-[var(--color-border)] bg-[var(--color-bg)] px-6">
+          <button
+            onClick={() => {
+              localStorage.removeItem("selectedProblemData");
+              onClose();
+            }}
+            className="px-6 py-2 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition shadow-lg shadow-[var(--color-accent)]/20"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // ---------- Default Dashboard Content ----------
@@ -203,9 +303,6 @@ const dashboardComponents = {
   "CPU Load Report - Linux": CpuLoadReportLinux,
   '"C" Disk Utilization Report - Windows': DiskUtilizationReportWindows,
   '"/" Disk Utilization Report - Linux': DiskUtilizationReportLinux,
-  "Oracle Monitoring": OracleMonitoring,
-  "Real-time_OS Performance": OracleRealTimeOSPerformance,
-  "Oracle_Historical Performance_Dashboard": OracleHistoricalPerformance,
   "Firewall Dashboard": FirewallDashboard,
   "Real-time_Firewall info": FirewallRealTimeInfo,
   "Real-time_Firewall Interface status": FirewallRealTimeInterfaceStatus,
@@ -213,27 +310,31 @@ const dashboardComponents = {
   "Firewall_Historical Performance": FirewallHistoricalPerformance,
   "NOC Dashboard": NOCDashboard,
   "Bangalore Dashboard": BangaloreDashboard,
+  // ❌ Oracle entries already removed
 };
 
 // ---------- Main DashboardPage ----------
 export default function DashboardPage({ go, active }) {
   const [dashboardName, setDashboardName] = useState("Main Dashboard");
   const [showBack, setShowBack] = useState(false);
+  const [showProblemModal, setShowProblemModal] = useState(false);
+  const [problemData, setProblemData] = useState(null);
 
-  // ✅ Enhanced useEffect with fallback to defaultDashboards
   useEffect(() => {
+    // Check if there's a problem from Incidents page
+    const storedProblem = localStorage.getItem("selectedProblemData");
+    if (storedProblem) {
+      try {
+        const parsed = JSON.parse(storedProblem);
+        setProblemData(parsed);
+        setShowProblemModal(true);
+      } catch {}
+    }
+
     const id = localStorage.getItem("selectedDashboard");
     if (id) {
-      // Try to find in localStorage dashboards first
-      let dashboards = [];
-      try {
-        dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
-      } catch {}
-      let found = dashboards.find((d) => String(d.id) === String(id));
-      // If not found, fallback to defaultDashboards
-      if (!found) {
-        found = defaultDashboards.find((d) => String(d.id) === String(id));
-      }
+      const dashboards = JSON.parse(localStorage.getItem("dashboards") || "[]");
+      const found = dashboards.find((d) => String(d.id) === String(id));
       if (found) {
         setDashboardName(found.name);
       } else {
@@ -249,6 +350,12 @@ export default function DashboardPage({ go, active }) {
   const goBack = () => {
     localStorage.removeItem("selectedDashboard");
     go("Dashboards");
+  };
+
+  const closeProblemModal = () => {
+    localStorage.removeItem("selectedProblemData");
+    setShowProblemModal(false);
+    setProblemData(null);
   };
 
   const getDashboardComponent = () => {
@@ -280,6 +387,13 @@ export default function DashboardPage({ go, active }) {
       )}
 
       <Content go={go} />
+
+      {/* Auto-open Problem Detail Modal */}
+      <ProblemDetailModal
+        isOpen={showProblemModal}
+        onClose={closeProblemModal}
+        problemData={problemData}
+      />
     </div>
   );
 }

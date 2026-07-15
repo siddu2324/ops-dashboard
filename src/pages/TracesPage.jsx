@@ -1,5 +1,5 @@
 // src/pages/TracesPage.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Search,
   ChevronDown,
@@ -24,19 +24,154 @@ import TimePicker from "../components/common/TimePicker";
 import ComparisonView from "../components/ComparisonView";
 import TracesListView from "../components/TracesListView";
 import { useAlerts } from "../context/AlertContext";
-import { generateTracesFromAlerts, generateChartDataFromStatuses } from "../utils/dataGenerator";
+import { serverInventory } from "../data/servers";
 
-// Fallback chart data generator (if util fails)
-const fallbackChartData = (points = 10) => {
+// Generate realistic trace data from server statuses and alerts
+const generateRealisticTraces = (alerts, serverStatuses) => {
+  const traces = [];
   const now = Date.now();
-  return Array.from({ length: points }, (_, i) => {
-    const time = new Date(now - (points - i) * 6000);
+
+  // Service names derived from server hostnames
+  const getServiceName = (hostname) => {
+    const host = serverInventory.find(s => s.hostname === hostname);
+    if (!host) return hostname;
+    const os = host.os || "";
+    if (os.includes("Windows")) return `${hostname}-windows`;
+    if (os.includes("Linux") || os.includes("Ubuntu")) return `${hostname}-linux`;
+    return hostname;
+  };
+
+  // Get OS type for service categorization
+  const getOSType = (hostname) => {
+    const host = serverInventory.find(s => s.hostname === hostname);
+    if (!host) return "unknown";
+    if (host.os && host.os.includes("Windows")) return "windows";
+    if (host.os && (host.os.includes("Linux") || host.os.includes("Ubuntu"))) return "linux";
+    return "unknown";
+  };
+
+  // Generate spans for a trace
+  const generateSpans = (hostname, status, severity) => {
+    const spans = [];
+    const isError = status === "down" || severity === "Critical" || severity === "High";
+    const baseDuration = Math.floor(50 + Math.random() * 500);
+    const numSpans = Math.floor(Math.random() * 4) + 2;
+
+    const spanNames = [
+      "GET /health",
+      "POST /api/v1/query",
+      "GET /api/v1/status",
+      "POST /api/v1/alert",
+      "GET /metrics",
+      "POST /api/v1/logs",
+      "GET /api/v1/traces",
+      "PUT /api/v1/config",
+      "DELETE /api/v1/cache",
+      "SELECT * FROM system_metrics",
+      "INSERT INTO audit_log",
+      "UPDATE server_status",
+    ];
+
+    for (let i = 0; i < numSpans; i++) {
+      const spanDuration = Math.floor(baseDuration * (0.3 + Math.random() * 0.7));
+      spans.push({
+        name: spanNames[i % spanNames.length],
+        duration: spanDuration,
+        status: isError && i === 0 ? "error" : "success",
+      });
+    }
+    return spans;
+  };
+
+  // Generate traces from server statuses
+  Object.entries(serverStatuses).forEach(([hostname, data]) => {
+    const status = data.status || "up";
+    const severity = status === "down" ? "Critical" : status === "warning" ? "Warning" : "Information";
+    const serviceName = getServiceName(hostname);
+    const osType = getOSType(hostname);
+    const duration = Math.floor(100 + Math.random() * 1900);
+    const isError = status === "down" || status === "warning";
+    const spans = generateSpans(hostname, status, severity);
+    const traceStatus = isError ? "error" : "success";
+
+    traces.push({
+      id: `trace-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      service: serviceName,
+      duration: duration,
+      status: traceStatus,
+      spans: spans,
+      timestamp: new Date(now - Math.random() * 86400000 * 2).toISOString(),
+      host: hostname,
+      os: osType,
+      severity: severity,
+    });
+  });
+
+  // Add traces from alerts (if they have host info)
+  alerts.forEach((alert) => {
+    if (alert.host) {
+      const serviceName = getServiceName(alert.host);
+      const severity = alert.severity || "Information";
+      const isError = severity === "Critical" || severity === "High";
+      const duration = Math.floor(100 + Math.random() * 2000);
+      const spans = generateSpans(alert.host, isError ? "warning" : "up", severity);
+
+      traces.push({
+        id: `trace-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+        service: serviceName,
+        duration: duration,
+        status: isError ? "error" : "success",
+        spans: spans,
+        timestamp: new Date(now - Math.random() * 86400000 * 2).toISOString(),
+        host: alert.host,
+        alertName: alert.alertname,
+        severity: severity,
+      });
+    }
+  });
+
+  // Sort by timestamp descending
+  return traces.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+};
+
+// Generate chart data from traces
+const generateChartDataFromTraces = (traces, metricType = "spanRate", points = 20) => {
+  const now = Date.now();
+  const data = [];
+
+  // Group traces by time intervals
+  const intervals = {};
+  traces.forEach((trace) => {
+    const time = new Date(trace.timestamp);
+    const key = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    if (!intervals[key]) {
+      intervals[key] = { time: key, count: 0, errors: 0, latency: [] };
+    }
+    intervals[key].count++;
+    if (trace.status === "error") intervals[key].errors++;
+    intervals[key].latency.push(trace.duration);
+  });
+
+  // Convert to array and limit to latest points
+  const sorted = Object.values(intervals).slice(-points);
+
+  return sorted.map((item) => {
+    const avgLatency = item.latency.reduce((a, b) => a + b, 0) / (item.latency.length || 1);
     return {
-      time: time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      value: Math.floor(Math.random() * 80) + 20,
+      time: item.time,
+      spanRate: item.count,
+      errorRate: Math.round((item.errors / (item.count || 1)) * 100),
+      latency: Math.round(avgLatency),
     };
   });
 };
+
+// Chart configuration
+const chartConfigs = [
+  { key: "spanRate", label: "Span rate", color: "#22D3EE" },
+  { key: "errorRate", label: "Error rate", color: "#F87171" },
+  { key: "latency", label: "Latency (ms)", color: "#FBBF24" },
+];
 
 export default function TracesPage() {
   const { alerts, serverStatuses } = useAlerts();
@@ -49,74 +184,21 @@ export default function TracesPage() {
   const [attributeTab, setAttributeTab] = useState("all");
   const [traceId, setTraceId] = useState("");
   const [viewMode, setViewMode] = useState("single");
-  const [showQueryError, setShowQueryError] = useState(true);
   const [activeTab, setActiveTab] = useState("structure");
   const [traces, setTraces] = useState([]);
-  const [chartData, setChartData] = useState({
-    spanRate: fallbackChartData(),
-    errorRate: fallbackChartData(),
-    latency: fallbackChartData(),
-    serviceStructure: fallbackChartData(),
-    comparison: fallbackChartData(),
-    traces: fallbackChartData(),
-  });
+  const [chartData, setChartData] = useState([]);
 
-  // Update data when alerts or serverStatuses change
+  // Generate traces when alerts or serverStatuses change
   useEffect(() => {
-    if (alerts && serverStatuses) {
-      // Generate traces from alerts
-      const generatedTraces = generateTracesFromAlerts(alerts, serverStatuses);
-      setTraces(generatedTraces);
-
-      // Generate chart data for each metric
-      const spanRateData = generateChartDataFromStatuses(serverStatuses, "cpu", 20);
-      const errorRateData = generateChartDataFromStatuses(serverStatuses, "memory", 20);
-      const latencyData = generateChartDataFromStatuses(serverStatuses, "disk", 20);
-
-      // For serviceStructure, comparison, traces – we can reuse one of the above or generate differently
-      // Let's use a mix or just copy one
-      setChartData({
-        spanRate: spanRateData,
-        errorRate: errorRateData,
-        latency: latencyData,
-        serviceStructure: spanRateData, // placeholder
-        comparison: errorRateData,      // placeholder
-        traces: latencyData,            // placeholder
-      });
-    } else {
-      // Fallback to static random data if context not available
-      setChartData({
-        spanRate: fallbackChartData(),
-        errorRate: fallbackChartData(),
-        latency: fallbackChartData(),
-        serviceStructure: fallbackChartData(),
-        comparison: fallbackChartData(),
-        traces: fallbackChartData(),
-      });
-      setTraces([]);
+    if (serverStatuses && Object.keys(serverStatuses).length > 0) {
+      const newTraces = generateRealisticTraces(alerts, serverStatuses);
+      setTraces(newTraces);
+      const newChartData = generateChartDataFromTraces(newTraces, metricType, 20);
+      setChartData(newChartData);
     }
   }, [alerts, serverStatuses]);
 
-  // Auto-refresh every 3 seconds (but only if we have context data, re-run to update chart points)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (serverStatuses && Object.keys(serverStatuses).length > 0) {
-        const spanRateData = generateChartDataFromStatuses(serverStatuses, "cpu", 20);
-        const errorRateData = generateChartDataFromStatuses(serverStatuses, "memory", 20);
-        const latencyData = generateChartDataFromStatuses(serverStatuses, "disk", 20);
-        setChartData({
-          spanRate: spanRateData,
-          errorRate: errorRateData,
-          latency: latencyData,
-          serviceStructure: spanRateData,
-          comparison: errorRateData,
-          traces: latencyData,
-        });
-      }
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [serverStatuses]);
-
+  // Attribute data derived from traces
   const attributes = {
     favorites: ["resource.service.name", "http.method", "http.status_code"],
     all: [
@@ -142,7 +224,12 @@ export default function TracesPage() {
   const handleTraceIdSubmit = (e) => {
     e.preventDefault();
     if (traceId.trim()) {
-      toast.success(`Searching for trace: ${traceId}`);
+      const found = traces.find(t => t.id.includes(traceId));
+      if (found) {
+        toast.success(`Trace ${traceId} found!`);
+      } else {
+        toast.error(`Trace ${traceId} not found`);
+      }
     }
   };
 
@@ -150,14 +237,8 @@ export default function TracesPage() {
     toast.success(`Time range updated: ${time.range || time.from + " → " + time.to}`);
   };
 
-  const chartConfigs = [
-    { key: "spanRate", label: "Span rate", color: "#22D3EE" },
-    { key: "errorRate", label: "Error rate", color: "#F87171" },
-    { key: "latency", label: "Latency", color: "#FBBF24" },
-    { key: "serviceStructure", label: "Service structure", color: "#34D399" },
-    { key: "comparison", label: "Comparison", color: "#A78BFA" },
-    { key: "traces", label: "Traces", color: "#F472B6" },
-  ];
+  // Get latest values for stats
+  const latestData = chartData[chartData.length - 1] || { spanRate: 0, errorRate: 0, latency: 0 };
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
@@ -237,21 +318,21 @@ export default function TracesPage() {
         <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3 text-center">
           <div className="text-xs text-[var(--color-muted)]">Span rate</div>
           <div className="text-2xl font-bold text-[var(--color-text)]">
-            {chartData.spanRate[chartData.spanRate.length - 1]?.value || 0}
+            {latestData.spanRate || traces.length}
           </div>
           <div className="text-xs text-[var(--color-faint)]">Last update: now</div>
         </div>
         <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3 text-center">
           <div className="text-xs text-[var(--color-muted)]">Error rate</div>
-          <div className="text-2xl font-bold text-[var(--color-text)]">
-            {chartData.errorRate[chartData.errorRate.length - 1]?.value || 0}
+          <div className="text-2xl font-bold text-[var(--color-crit)]">
+            {latestData.errorRate || 0}%
           </div>
           <div className="text-xs text-[var(--color-faint)]">Last update: now</div>
         </div>
         <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-3 text-center">
           <div className="text-xs text-[var(--color-muted)]">Latency</div>
           <div className="text-2xl font-bold text-[var(--color-text)]">
-            {chartData.latency[chartData.latency.length - 1]?.value || 0}ms
+            {latestData.latency || 0}ms
           </div>
           <div className="text-xs text-[var(--color-faint)]">Last update: now</div>
         </div>
@@ -369,21 +450,6 @@ export default function TracesPage() {
 
         {/* Main content */}
         <div className="lg:col-span-3 space-y-3">
-          {/* Query error banner */}
-          {showQueryError && (
-            <div className="flex items-center gap-3 bg-[var(--color-crit)]/10 border border-[var(--color-crit)]/30 rounded-lg px-4 py-2 text-sm">
-              <AlertCircle size={16} className="text-[var(--color-crit)]" />
-              <span className="text-[var(--color-text)]">Query error</span>
-              <span className="text-[var(--color-muted)]">Datasource was not found</span>
-              <button
-                onClick={() => setShowQueryError(false)}
-                className="ml-auto text-xs text-[var(--color-muted)] hover:text-[var(--color-text)]"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
-
           {/* Search and view controls */}
           <div className="flex flex-wrap items-center gap-3">
             <form onSubmit={handleTraceIdSubmit} className="flex items-center gap-2">
@@ -429,7 +495,10 @@ export default function TracesPage() {
           {activeTab === "structure" && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {chartConfigs.map((cfg) => {
-                const data = chartData[cfg.key] || [];
+                const data = chartData.map(d => ({
+                  time: d.time,
+                  value: d[cfg.key] || 0
+                }));
                 return (
                   <div
                     key={cfg.key}
@@ -456,7 +525,7 @@ export default function TracesPage() {
                           tick={{ fontSize: 8, fill: "var(--color-faint)" }}
                           tickLine={false}
                           axisLine={false}
-                          domain={[0, 100]}
+                          domain={[0, "auto"]}
                           width={20}
                         />
                         <Tooltip
@@ -490,7 +559,6 @@ export default function TracesPage() {
 
           {activeTab === "comparison" && <ComparisonView />}
 
-          {/* ✅ Traces tab now uses the TracesListView component */}
           {activeTab === "traces" && (
             <TracesListView traces={traces} />
           )}
