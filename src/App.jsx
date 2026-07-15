@@ -24,6 +24,7 @@ const KubernetesPage = lazy(() => import("./pages/KubernetesPage"));
 const DockerPage = lazy(() => import("./pages/DockerPage"));
 const VMwarePage = lazy(() => import("./pages/VMwarePage"));
 const LogsPage = lazy(() => import("./pages/LogsPage"));
+const CloudPage = lazy(() => import("./pages/CloudPage"));
 const TracesPage = lazy(() => import("./pages/TracesPage"));
 const AlertingPage = lazy(() => import("./pages/AlertingPage"));
 const AssistantPage = lazy(() => import("./pages/AssistantPage"));
@@ -205,6 +206,7 @@ const PAGES = {
   Logs: LogsPage,
   Traces: TracesPage,
   Alerting: AlertingPage,
+  Cloud: CloudPage,
   Incidents: IncidentsPage,
   RCA: RCAPage,
   "AI Assistant": AssistantPage,
