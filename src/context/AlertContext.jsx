@@ -1,4 +1,4 @@
-// src/context/AlertContext.jsx (full update)
+// src/context/AlertContext.jsx
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
 import { serverInventory, generateServerMetrics } from "../data/servers";
@@ -277,6 +277,31 @@ export const AlertProvider = ({ children }) => {
     return serverStatuses[hostname]?.status || "unknown";
   };
 
+  // ---- NEW: resolve alert and update host status ----
+  const resolveAlertWithHost = (id) => {
+    // Find the alert
+    const alert = alerts.find(a => a.id === id);
+    if (!alert) return;
+
+    // Resolve the alert
+    setAlerts((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, state: "resolved" } : a))
+    );
+
+    // If the alert has a host, update its status to up
+    if (alert.host) {
+      setServerStatuses(prev => ({
+        ...prev,
+        [alert.host]: { 
+          ...prev[alert.host], 
+          status: "up",
+          lastUpdated: new Date().toISOString()
+        }
+      }));
+      toast.success(`✅ Host ${alert.host} marked as up`);
+    }
+  };
+
   return (
     <AlertContext.Provider
       value={{
@@ -293,6 +318,7 @@ export const AlertProvider = ({ children }) => {
         serverStatuses,
         updateServerStatus,
         getServerStatus,
+        resolveAlertWithHost,   // 👈 EXPORT the new function
       }}
     >
       {children}

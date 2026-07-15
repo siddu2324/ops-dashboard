@@ -18,6 +18,7 @@ import ChartTooltip from "../components/common/ChartTooltip";
 import { useAlerts } from "../context/AlertContext";
 import { cpuSeries } from "../data/cpuSeries";
 import { reqSeries } from "../data/reqSeries";
+import HealthSummary from "../components/HealthSummary"; // 👈 import HealthSummary
 import MemoryUtilizationReport from "./dashboards/MemoryUtilizationReport";
 import MemoryUtilizationReportLinux from "./dashboards/MemoryUtilizationReportLinux";
 import CpuLoadReportWindows from "./dashboards/CpuLoadReportWindows";
@@ -96,6 +97,7 @@ const DefaultDashboardContent = ({ go }) => {
 
   return (
     <div className="grid gap-4">
+      <HealthSummary /> {/* 👈 Add HealthSummary at the top */}
       <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">
         <Stat label="Active alerts" value={activeAlertCount} delta={`${newAlertCount} new`} tone="var(--color-crit)" />
         <Stat label="Hosts up" value="248" unit="/ 251" delta="99.2% fleet" />

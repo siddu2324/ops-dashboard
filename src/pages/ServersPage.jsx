@@ -1,9 +1,9 @@
 // src/pages/ServersPage.jsx
-import { useState, useEffect, useRef } from "react";
-import { 
-  Search, RefreshCw, Plus, Server, HardDrive, Cpu, 
-  Activity, ChevronDown, ChevronRight, Filter, 
-  MoreVertical, Eye, Edit, Trash2, Power, 
+import { useState, useEffect } from "react";
+import {
+  Search, RefreshCw, Plus, Server, HardDrive, Cpu,
+  Activity, ChevronDown, ChevronRight, Filter,
+  MoreVertical, Eye, Edit, Trash2, Power,
   Play, Square, AlertCircle, CheckCircle, XCircle,
   Clock, Database, Network, Globe, Wifi, Zap,
   ChevronLeft, ChevronRight as ChevronRightIcon,
@@ -19,9 +19,9 @@ import Card from "../components/common/Card";
 import StatusDot from "../components/common/StatusDot";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { serverInventory, generateServerMetrics } from "../data/servers";
-import { useAlerts } from "../context/AlertContext"; // ✅ import context
+import { useAlerts } from "../context/AlertContext";
 
-// Helper functions for status (unchanged)
+// Helper functions
 const getStatusColor = (status) => {
   if (status === "up" || status === "healthy") return "text-[var(--color-ok)]";
   if (status === "warning") return "text-[var(--color-warn)]";
@@ -35,22 +35,8 @@ const getStatusText = (status) => {
   return status;
 };
 
-// ---- Add Application Modal (unchanged) ----
-const AddApplicationModal = ({ isOpen, onClose, onAdd }) => {
-  // ... (keep exactly as before)
-  // I'll include it below to avoid duplication in the final answer
-};
-
-// ---- Drill Down Modal (unchanged) ----
-const DrillDownModal = ({ isOpen, onClose, application }) => {
-  // ... (keep exactly as before)
-};
-
-// ---- Main Component ----
-export default function ApplicationsPage() {
-  // ✅ Use context to get server statuses
+export default function ServersPage() {
   const { serverStatuses } = useAlerts();
-
   const [applications, setApplications] = useState([]);
   const [filteredApplications, setFilteredApplications] = useState([]);
   const [filteredProblemApps, setFilteredProblemApps] = useState([]);
@@ -59,12 +45,10 @@ export default function ApplicationsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [view, setView] = useState("all");
   const [expandedGroups, setExpandedGroups] = useState({});
-  const [selectedApp, setSelectedApp] = useState(null);
   const [drillDownApp, setDrillDownApp] = useState(null);
   const [showDrillDown, setShowDrillDown] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // ---- NEW: Generate applications from serverStatuses (inside component) ----
   const generateApplications = () => {
     const appTemplates = [
       "Microsoft Windows Server 2012-2012 R2 Failover Cluster",
@@ -80,10 +64,9 @@ export default function ApplicationsPage() {
     ];
 
     return serverInventory.map((server, index) => {
-      // Get status data from context, fallback to generated metrics
-      const statusData = serverStatuses?.[server.hostname] || { 
-        status: "up", 
-        metrics: generateServerMetrics(server.id) 
+      const statusData = serverStatuses?.[server.hostname] || {
+        status: "up",
+        metrics: generateServerMetrics(server.id)
       };
       const status = statusData.status || "up";
       const metrics = statusData.metrics || { cpu: 0, memory: 0, disk: 0 };
@@ -120,7 +103,7 @@ export default function ApplicationsPage() {
     fetchData();
     const interval = setInterval(() => fetchData(false), 30000);
     return () => clearInterval(interval);
-  }, [serverStatuses]); // re-run when serverStatuses updates
+  }, [serverStatuses]);
 
   const fetchData = (showToast = true) => {
     setIsRefreshing(true);
@@ -131,7 +114,7 @@ export default function ApplicationsPage() {
       applyFilters(data, search);
       setLoading(false);
       setIsRefreshing(false);
-      if (showToast) toast.success("Server updated");
+      if (showToast) toast.success("Servers updated");
     }, 800);
   };
 
@@ -139,7 +122,7 @@ export default function ApplicationsPage() {
     let result = data;
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(app => 
+      result = result.filter(app =>
         app.name.toLowerCase().includes(term) ||
         app.nodeName.toLowerCase().includes(term) ||
         app.template.toLowerCase().includes(term)
@@ -158,12 +141,6 @@ export default function ApplicationsPage() {
       ...prev,
       [groupId]: !prev[groupId]
     }));
-  };
-
-  const getStatusIcon = (status) => {
-    if (status === "up" || status === "healthy") return <CheckCircle size={16} className="text-[var(--color-ok)]" />;
-    if (status === "warning") return <AlertCircle size={16} className="text-[var(--color-warn)]" />;
-    return <XCircle size={16} className="text-[var(--color-crit)]" />;
   };
 
   const handleDrillDown = (app) => {
@@ -186,7 +163,6 @@ export default function ApplicationsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text)] flex items-center gap-2">
@@ -215,7 +191,6 @@ export default function ApplicationsPage() {
         </div>
       </div>
 
-      {/* View Tabs */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -261,7 +236,6 @@ export default function ApplicationsPage() {
         </div>
       </div>
 
-      {/* All Applications Table */}
       {(view === "all") && (
         <Card className="overflow-hidden">
           <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
@@ -294,7 +268,6 @@ export default function ApplicationsPage() {
 
                   return (
                     <div key={nodeName} className="border border-[var(--color-border)] rounded-lg overflow-hidden">
-                      {/* Group Header */}
                       <div
                         className="flex items-center justify-between p-3 bg-[var(--color-bg)] cursor-pointer hover:bg-[var(--color-border)]/5 transition"
                         onClick={() => toggleGroup(nodeName)}
@@ -331,8 +304,6 @@ export default function ApplicationsPage() {
                           </button>
                         </div>
                       </div>
-
-                      {/* Group Content - Applications List */}
                       {isExpanded && (
                         <div className="p-3 border-t border-[var(--color-border)] space-y-2">
                           {apps.map((app) => (
@@ -388,7 +359,6 @@ export default function ApplicationsPage() {
         </Card>
       )}
 
-      {/* Applications with Problems Table */}
       {(view === "problems") && (
         <Card className="overflow-hidden">
           <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
@@ -479,14 +449,12 @@ export default function ApplicationsPage() {
         </Card>
       )}
 
-      {/* Add Application Modal */}
       <AddApplicationModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={handleAddApplication}
       />
 
-      {/* Drill Down Modal */}
       <DrillDownModal
         isOpen={showDrillDown}
         onClose={() => {
@@ -499,7 +467,7 @@ export default function ApplicationsPage() {
   );
 }
 
-// ---- AddApplicationModal implementation (unchanged) ----
+// ---- AddApplicationModal Implementation (unchanged) ----
 const AddApplicationModal = ({ isOpen, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
     nodeName: "",
@@ -567,7 +535,6 @@ const AddApplicationModal = ({ isOpen, onClose, onAdd }) => {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
@@ -586,37 +553,15 @@ const AddApplicationModal = ({ isOpen, onClose, onAdd }) => {
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 overflow-y-auto max-h-[calc(90vh-180px)]">
           <div className="space-y-4">
-            {/* Node Name */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                Node Name <span className="text-[var(--color-crit)]">*</span>
-              </label>
-              <input
-                type="text"
-                name="nodeName"
-                value={formData.nodeName}
-                onChange={handleChange}
-                placeholder="e.g., NOCAPPSQL02V"
-                className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                required
-              />
+              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">Node Name <span className="text-[var(--color-crit)]">*</span></label>
+              <input type="text" name="nodeName" value={formData.nodeName} onChange={handleChange} placeholder="e.g., NOCAPPSQL02V" className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition" required />
             </div>
-
-            {/* Application Template */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                Server Template <span className="text-[var(--color-crit)]">*</span>
-              </label>
-              <select
-                name="template"
-                value={formData.template}
-                onChange={handleChange}
-                className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                required
-              >
+              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">Server Template <span className="text-[var(--color-crit)]">*</span></label>
+              <select name="template" value={formData.template} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition" required>
                 <option value="">Select template...</option>
                 <option value="Microsoft Windows Server 2012-2012 R2 Failover Cluster">Microsoft Windows Server 2012-2012 R2 Failover Cluster</option>
                 <option value="MySQL 8.0 Metrics for Windows">MySQL 8.0 Metrics for Windows</option>
@@ -630,114 +575,42 @@ const AddApplicationModal = ({ isOpen, onClose, onAdd }) => {
                 <option value="VMware vCenter">VMware vCenter</option>
               </select>
             </div>
-
-            {/* Application Name */}
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                Server Name <span className="text-[var(--color-crit)]">*</span>
-              </label>
-              <input
-                type="text"
-                name="applicationName"
-                value={formData.applicationName}
-                onChange={handleChange}
-                placeholder="e.g., Web Server Server"
-                className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                required
-              />
+              <label className="block text-sm font-medium text-[var(--color-text)] mb-1">Server Name <span className="text-[var(--color-crit)]">*</span></label>
+              <input type="text" name="applicationName" value={formData.applicationName} onChange={handleChange} placeholder="e.g., Web Server Server" className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition" required />
             </div>
-
-            {/* Status and Resources - Two columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Status
-                </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                >
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">Status</label>
+                <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition">
                   <option value="up">Up / Healthy</option>
                   <option value="warning">Warning</option>
                   <option value="down">Down / Critical</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  CPU Load
-                </label>
-                <input
-                  type="text"
-                  name="cpu"
-                  value={formData.cpu}
-                  onChange={handleChange}
-                  placeholder="e.g., 5%"
-                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                />
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">CPU Load</label>
+                <input type="text" name="cpu" value={formData.cpu} onChange={handleChange} placeholder="e.g., 5%" className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition" />
               </div>
             </div>
-
-            {/* Memory and Components - Two columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Memory Usage
-                </label>
-                <input
-                  type="text"
-                  name="memory"
-                  value={formData.memory}
-                  onChange={handleChange}
-                  placeholder="e.g., 45%"
-                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                />
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">Memory Usage</label>
+                <input type="text" name="memory" value={formData.memory} onChange={handleChange} placeholder="e.g., 45%" className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Number of Components
-                </label>
-                <input
-                  type="number"
-                  name="components"
-                  value={formData.components}
-                  onChange={handleChange}
-                  min="1"
-                  max="20"
-                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                />
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">Components</label>
+                <input type="number" name="components" value={formData.components} onChange={handleChange} min="1" max="20" className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition" />
               </div>
             </div>
-
-            {/* IP and OS - Two columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  IP Address
-                </label>
-                <input
-                  type="text"
-                  name="ip"
-                  value={formData.ip}
-                  onChange={handleChange}
-                  placeholder="e.g., 10.1.40.39"
-                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                />
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">IP Address</label>
+                <input type="text" name="ip" value={formData.ip} onChange={handleChange} placeholder="e.g., 10.1.40.39" className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Operating System
-                </label>
-                <select
-                  name="os"
-                  value={formData.os}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                >
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">OS</label>
+                <select name="os" value={formData.os} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition">
                   <option value="Windows Server 2016">Windows Server 2016</option>
                   <option value="Windows Server 2019">Windows Server 2019</option>
                   <option value="Windows Server 2022">Windows Server 2022</option>
@@ -748,68 +621,26 @@ const AddApplicationModal = ({ isOpen, onClose, onAdd }) => {
                 </select>
               </div>
             </div>
-
-            {/* Environment and Alerts - Two columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Environment
-                </label>
-                <select
-                  name="environment"
-                  value={formData.environment}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                >
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">Environment</label>
+                <select name="environment" value={formData.environment} onChange={handleChange} className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition">
                   <option value="Production">Production</option>
                   <option value="Staging">Staging</option>
                   <option value="Development">Development</option>
                   <option value="Testing">Testing</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">
-                  Initial Alerts
-                </label>
-                <input
-                  type="number"
-                  name="alerts"
-                  value={formData.alerts}
-                  onChange={handleChange}
-                  min="0"
-                  max="10"
-                  className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition"
-                />
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-1">Initial Alerts</label>
+                <input type="number" name="alerts" value={formData.alerts} onChange={handleChange} min="0" max="10" className="w-full px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder-[var(--color-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition" />
               </div>
             </div>
           </div>
-
-          {/* Footer */}
           <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[var(--color-border)]">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)]"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-6 py-2 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition shadow-lg shadow-[var(--color-accent)]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <LoadingSpinner size={16} />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus size={16} />
-                  Add Server
-                </>
-              )}
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)]">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="px-6 py-2 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition shadow-lg shadow-[var(--color-accent)]/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+              {isSubmitting ? <><LoadingSpinner size={16} /> Adding...</> : <><Plus size={16} /> Add Server</>}
             </button>
           </div>
         </form>
@@ -818,325 +649,453 @@ const AddApplicationModal = ({ isOpen, onClose, onAdd }) => {
   );
 };
 
-// ---- DrillDownModal implementation (unchanged) ----
+// ---- Problem Detail Modal (NEW) ----
+const ProblemDetailModal = ({ isOpen, onClose, problem, application }) => {
+  if (!isOpen || !problem) return null;
+
+  // Generate detailed content based on the problem
+  const getProblemDetails = (problem, app) => {
+    const name = problem.name || "";
+    const status = problem.status || "unknown";
+    const metrics = {
+      cpu: app?.cpu || "0%",
+      memory: app?.memory || "0%",
+      disk: "45%",
+    };
+
+    let rootCause = "";
+    let recommendation = "";
+    let confidence = "85%";
+    let metricsList = [];
+
+    if (name.includes("unreachable") || name.includes("Host is unreachable")) {
+      rootCause = `The host ${app?.nodeName || "server"} is not responding to network requests. This could be due to a network outage, power failure, hardware fault, or firewall blocking.`;
+      recommendation = `Check physical connectivity, verify power supply, inspect network cables, and ensure the firewall rules allow ICMP. If the issue persists, schedule a maintenance window to investigate hardware.`;
+      metricsList = ["Packet loss: 100%", "Network I/O: 0/0 Mbps (rx/tx)", "Last ping response: timeout"];
+    } else if (name.includes("CPU usage") || name.includes("High CPU")) {
+      const cpu = metrics.cpu;
+      rootCause = `CPU utilization has exceeded the critical threshold (${cpu}). This is likely caused by a runaway process, high system load, or insufficient resources for the current workload.`;
+      recommendation = `Investigate the top processes using 'top' or 'task manager'. Consider scaling resources, optimizing application code, or redistributing workloads.`;
+      metricsList = [`CPU utilization: ${cpu}`, `System load: ${parseInt(cpu)/10 || 4.5}`, `Context switches: ${Math.floor(Math.random() * 10000 + 5000)}/s`];
+    } else if (name.includes("memory usage") || name.includes("High memory")) {
+      const memory = metrics.memory;
+      rootCause = `Memory usage is critically high (${memory}). This may indicate a memory leak, excessive caching, or insufficient RAM for the running services.`;
+      recommendation = `Check memory consumption per process, increase swap space, or add more RAM. Investigate for memory leaks in applications.`;
+      metricsList = [`Memory utilization: ${memory}`, `Swap usage: ${Math.floor(Math.random() * 40 + 10)}%`, `Cache hit ratio: ${Math.floor(Math.random() * 30 + 60)}%`];
+    } else if (name.includes("disk usage") || name.includes("High disk")) {
+      const disk = metrics.disk;
+      rootCause = `Disk usage has reached ${disk}, which may cause system performance degradation and application failures.`;
+      recommendation = `Clean up temporary files, archive old logs, and consider increasing disk capacity or moving data to another volume.`;
+      metricsList = [`Disk utilization: ${disk}`, `Available space: ${100 - parseInt(disk)}%`, `Inode usage: ${Math.floor(Math.random() * 30 + 60)}%`];
+    } else if (name.includes("All systems are operating normally")) {
+      rootCause = "All systems are operating within normal parameters. No issues detected.";
+      recommendation = "Continue monitoring. No action required at this time.";
+      metricsList = ["System status: Healthy", "All metrics within thresholds"];
+    } else {
+      rootCause = `An issue has been detected on ${app?.nodeName || "the server"}: ${name}`;
+      recommendation = `Review system logs and perform troubleshooting based on the specific error. Consider restarting services if needed.`;
+      metricsList = ["Check system logs", "Verify service status", "Monitor resource usage"];
+    }
+
+    return { rootCause, recommendation, confidence, metricsList };
+  };
+
+  const details = getProblemDetails(problem, application);
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+          <div className="flex items-center gap-3">
+            <AlertCircle size={20} className={problem.status === "down" ? "text-[var(--color-crit)]" : "text-[var(--color-warn)]"} />
+            <div>
+              <h3 className="text-xl font-bold text-[var(--color-text)]">
+                {application?.nodeName || "Server"} · {problem.name}
+              </h3>
+              <div className="flex items-center gap-3 mt-0.5">
+                <span className="text-xs bg-[var(--color-panel-alt)] px-2 py-0.5 rounded border border-[var(--color-border)] text-[var(--color-muted)]">
+                  Infrastructure
+                </span>
+                <span className="text-xs text-[var(--color-muted)]">Host {application?.nodeName}</span>
+                <span className="text-xs text-[var(--color-muted)]">Service {application?.template || "Application"}</span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 rounded-xl hover:bg-[var(--color-border)]/10 transition flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="text-[var(--color-muted)]">As of {new Date().toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+            <span className="text-xs font-mono text-[var(--color-faint)]">Reference ID SRV-{application?.nodeName?.slice(0,4) || "000"}-001</span>
+          </div>
+
+          <div className="bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-4">
+            <p className="text-sm text-[var(--color-text)]">
+              Live resource snapshot for {application?.nodeName} ({application?.ip || "N/A"}).
+            </p>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h4 className="text-sm font-semibold text-[var(--color-text)] uppercase tracking-wider">Root Cause Analysis</h4>
+              <span className="text-xs font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-2 py-0.5 rounded-full border border-[var(--color-accent)]/20">
+                {details.confidence} CONFIDENCE
+              </span>
+            </div>
+            <p className="text-sm text-[var(--color-text)] leading-relaxed">{details.rootCause}</p>
+            <ul className="mt-3 space-y-1">
+              {details.metricsList.map((metric, i) => (
+                <li key={i} className="text-sm text-[var(--color-muted)] flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]"></span>
+                  {metric}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-[var(--color-text)] uppercase tracking-wider mb-2">Recommended Action</h4>
+            <div className="bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-4">
+              <p className="text-sm text-[var(--color-text)] leading-relaxed">{details.recommendation}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 p-4 border-t border-[var(--color-border)] bg-[var(--color-bg)] px-6">
+          <button
+            onClick={() => alert('Marked as reviewed')}
+            className="px-4 py-2 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-text)]"
+          >
+            Mark reviewed
+          </button>
+          <button
+            onClick={onClose}
+            className="px-6 py-2 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition shadow-lg shadow-[var(--color-accent)]/20"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ---- DrillDownModal Implementation (UPDATED: with problem click -> detail modal) ----
 const DrillDownModal = ({ isOpen, onClose, application }) => {
   if (!isOpen || !application) return null;
 
   const [drillLevel, setDrillLevel] = useState(0);
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [showCommands, setShowCommands] = useState(false);
+  const [selectedProblem, setSelectedProblem] = useState(null); // for detail modal
 
-  const getDrillData = (level) => {
+  // Normalize status
+  const normalizeStatus = (status) => {
+    if (!status) return "up";
+    const s = status.toLowerCase();
+    if (s === "critical" || s === "down") return "down";
+    if (s === "warning") return "warning";
+    return "up";
+  };
+
+  // Generate drill data
+  const getDrillData = (level, app) => {
+    const rawStatus = app.status || "up";
+    const status = normalizeStatus(rawStatus);
+    const metrics = {
+      cpu: parseInt(app.cpu) || 0,
+      memory: parseInt(app.memory) || 0,
+      disk: 45,
+    };
+
+    const baseItems = [
+      { name: app.template || "Application Template", type: "template", status: status },
+      { name: "Resource Control Manager: Groups Online", type: "component", status: status },
+      { name: "Physical Disk", type: "component", status: status },
+      { name: "Network Name", type: "component", status: status },
+      { name: "File Share", type: "component", status: status },
+    ];
+
+    const problems = [];
+    if (status === "down") {
+      problems.push({ name: "Host is unreachable", type: "problem", status: "down" });
+    }
+    if (status === "warning") {
+      problems.push({ name: "High resource usage detected", type: "problem", status: "warning" });
+    }
+    if (metrics.cpu > 80) {
+      problems.push({ name: `High CPU usage (${metrics.cpu}%)`, type: "problem", status: "warning" });
+    }
+    if (metrics.memory > 80) {
+      problems.push({ name: `High memory usage (${metrics.memory}%)`, type: "problem", status: "warning" });
+    }
+    if (metrics.disk > 80) {
+      problems.push({ name: `High disk usage (${metrics.disk}%)`, type: "problem", status: "warning" });
+    }
+
+    if (problems.length === 0 && status === "up") {
+      problems.push({ name: "All systems are operating normally", type: "info", status: "up" });
+    }
+
     if (level === 0) {
-      return {
-        title: application.name,
-        items: [
-          { name: "Microsoft Windows Server 2012-2012 R2 Failover Cluster", type: "template", status: "up" },
-          { name: "Resource Control Manager: Groups Online", type: "component", status: "up" },
-          { name: "Physical Disk", type: "component", status: "up" },
-          { name: "Network Name", type: "component", status: "warning" },
-          { name: "File Share", type: "component", status: "up" },
-        ]
-      };
+      return { title: app.name, items: baseItems };
     } else if (level === 1) {
-      return {
-        title: "Components with Problems",
-        items: [
-          { name: "Network Name: Failed to connect", type: "problem", status: "down" },
-          { name: "IP Address: Conflict detected", type: "problem", status: "warning" },
-        ]
-      };
+      return { title: "Components with Problems", items: problems };
     } else {
-      return {
-        title: "Detailed View",
-        items: [
-          { name: "Network Name Configuration", type: "detail", status: "info" },
-          { name: "IP Address Settings", type: "detail", status: "info" },
-          { name: "Resource Dependencies", type: "detail", status: "info" },
-        ]
-      };
+      return { title: "Detailed View", items: problems.map(p => ({ ...p, type: "detail" })) };
     }
   };
 
-  const drillData = getDrillData(drillLevel);
+  const drillData = getDrillData(drillLevel, application);
+
+  const getStatusLabel = (status) => {
+    const s = normalizeStatus(status);
+    if (s === "up") return { label: "Online", color: "var(--color-ok)" };
+    if (s === "warning") return { label: "Warning", color: "var(--color-warn)" };
+    if (s === "down") return { label: "Offline", color: "var(--color-crit)" };
+    return { label: "Unknown", color: "var(--color-muted)" };
+  };
+
+  // Handle click on a problem item
+  const handleProblemClick = (item) => {
+    // Only open detail for problems or components with status down/warning
+    if (item.status === "down" || item.status === "warning") {
+      setSelectedProblem(item);
+    } else {
+      // If it's healthy, just show a toast
+      toast.info("This component is operating normally.");
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
-              <Server size={20} className="text-[var(--color-accent)]" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-[var(--color-text)]">
-                {application.nodeName}
-              </h3>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-[var(--color-muted)]">{application.template}</span>
-                <span className="text-xs text-[var(--color-muted)]">•</span>
-                <span className={`text-xs font-medium ${getStatusColor(application.status)}`}>
-                  {getStatusText(application.status)}
-                </span>
+    <>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
+                <Server size={20} className="text-[var(--color-accent)]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[var(--color-text)]">
+                  {application.nodeName}
+                </h3>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs text-[var(--color-muted)]">{application.template}</span>
+                  <span className="text-xs text-[var(--color-muted)]">•</span>
+                  <span className={`text-xs font-medium ${getStatusColor(application.status)}`}>
+                    {getStatusText(application.status)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {drillLevel > 0 && (
+            <div className="flex items-center gap-2">
+              {drillLevel > 0 && (
+                <button
+                  onClick={() => setDrillLevel(drillLevel - 1)}
+                  className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)] flex items-center gap-1"
+                >
+                  <ChevronLeft size={16} />
+                  Back
+                </button>
+              )}
               <button
-                onClick={() => setDrillLevel(drillLevel - 1)}
+                onClick={() => setShowCommands(!showCommands)}
                 className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)] flex items-center gap-1"
               >
-                <ChevronLeft size={16} />
-                Back
+                <MoreVertical size={14} />
+                COMMANDS {showCommands ? '▲' : '▼'}
               </button>
-            )}
-            <button
-              onClick={() => setShowCommands(!showCommands)}
-              className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)] flex items-center gap-1"
-            >
-              <MoreVertical size={14} />
-              COMMANDS {showCommands ? '▲' : '▼'}
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)]"
-            >
-              <XCircle size={20} />
-            </button>
-          </div>
-        </div>
-
-        {/* Commands Dropdown */}
-        {showCommands && (
-          <div className="p-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
-            <div className="flex flex-wrap gap-2">
-              <button className="px-3 py-1.5 text-sm bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent)]/20 transition">
-                Edit
-              </button>
-              <button className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)]">
-                Restart
-              </button>
-              <button className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)]">
-                Stop
-              </button>
-              <button className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)]">
-                Start
-              </button>
-              <button className="px-3 py-1.5 text-sm border border-[var(--color-crit)]/30 text-[var(--color-crit)] rounded-lg hover:bg-[var(--color-crit)]/10 transition">
-                Delete
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)]"
+              >
+                <XCircle size={20} />
               </button>
             </div>
           </div>
-        )}
 
-        {/* Content */}
-        <div className="p-5 overflow-y-auto max-h-[calc(90vh-180px)]">
-          {/* Application Summary */}
-          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
-                  <span className="text-sm text-[var(--color-muted)]">IP Address</span>
-                  <span className="text-sm text-[var(--color-text)] font-mono">{application.ip || '10.1.40.39'}</span>
-                </div>
-                <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
-                  <span className="text-sm text-[var(--color-muted)]">Machine Type</span>
-                  <span className="text-sm text-[var(--color-text)]">{application.os || 'Windows 2016 Server'}</span>
-                </div>
-                <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
-                  <span className="text-sm text-[var(--color-muted)]">CPU Load</span>
-                  <span className="text-sm text-[var(--color-text)] font-mono">{application.cpu}</span>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
-                  <span className="text-sm text-[var(--color-muted)]">Percent Memory Used</span>
-                  <span className="text-sm text-[var(--color-text)] font-mono">{application.memory}</span>
-                </div>
-                <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
-                  <span className="text-sm text-[var(--color-muted)]">Operational State</span>
-                  <span className={`text-sm font-medium ${
-                    application.status === "up" ? "text-[var(--color-ok)]" :
-                    application.status === "warning" ? "text-[var(--color-warn)]" :
-                    "text-[var(--color-crit)]"
-                  }`}>
-                    {application.status === "up" ? "Running" :
-                     application.status === "warning" ? "Degraded" :
-                     "Stopped"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
-                  <span className="text-sm text-[var(--color-muted)]">Guest Status</span>
-                  <span className={`text-sm font-medium ${
-                    application.status === "up" ? "text-[var(--color-ok)]" :
-                    application.status === "warning" ? "text-[var(--color-warn)]" :
-                    "text-[var(--color-crit)]"
-                  }`}>
-                    {application.status === "up" ? "Up" :
-                     application.status === "warning" ? "Warning" :
-                     "Down"}
-                  </span>
-                </div>
+          {/* Commands Dropdown */}
+          {showCommands && (
+            <div className="p-3 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+              <div className="flex flex-wrap gap-2">
+                <button className="px-3 py-1.5 text-sm bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent)]/20 transition">Edit</button>
+                <button className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)]">Restart</button>
+                <button className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)]">Stop</button>
+                <button className="px-3 py-1.5 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)]">Start</button>
+                <button className="px-3 py-1.5 text-sm border border-[var(--color-crit)]/30 text-[var(--color-crit)] rounded-lg hover:bg-[var(--color-crit)]/10 transition">Delete</button>
               </div>
             </div>
+          )}
 
-            {/* Resource Bars */}
-            <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-[var(--color-muted)]">CPU Usage</span>
-                    <span className="text-[var(--color-text)] font-mono">{application.cpu}</span>
+          {/* Content */}
+          <div className="p-5 overflow-y-auto max-h-[calc(90vh-180px)]">
+            {/* Application Summary */}
+            <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
+                    <span className="text-sm text-[var(--color-muted)]">IP Address</span>
+                    <span className="text-sm text-[var(--color-text)] font-mono">{application.ip || '10.1.40.39'}</span>
                   </div>
-                  <div className="w-full h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: application.cpu,
-                        background: parseInt(application.cpu) > 80 ? "var(--color-crit)" : 
-                                    parseInt(application.cpu) > 60 ? "var(--color-warn)" : "var(--color-ok)"
-                      }}
-                    />
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
+                    <span className="text-sm text-[var(--color-muted)]">Machine Type</span>
+                    <span className="text-sm text-[var(--color-text)]">{application.os || 'Windows 2016 Server'}</span>
                   </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-[var(--color-muted)]">Memory Usage</span>
-                    <span className="text-[var(--color-text)] font-mono">{application.memory}</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: application.memory,
-                        background: parseInt(application.memory) > 80 ? "var(--color-crit)" : 
-                                    parseInt(application.memory) > 60 ? "var(--color-warn)" : "var(--color-ok)"
-                      }}
-                    />
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
+                    <span className="text-sm text-[var(--color-muted)]">CPU Load</span>
+                    <span className="text-sm text-[var(--color-text)] font-mono">{application.cpu}</span>
                   </div>
                 </div>
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-[var(--color-muted)]">Disk Usage</span>
-                    <span className="text-[var(--color-text)] font-mono">45%</span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
+                    <span className="text-sm text-[var(--color-muted)]">Percent Memory Used</span>
+                    <span className="text-sm text-[var(--color-text)] font-mono">{application.memory}</span>
                   </div>
-                  <div className="w-full h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: "45%",
-                        background: 45 > 80 ? "var(--color-crit)" : 
-                                    45 > 60 ? "var(--color-warn)" : "var(--color-ok)"
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Components with Problems */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-[var(--color-text)] flex items-center gap-2">
-              <AlertCircle size={16} className="text-[var(--color-crit)]" />
-              COMPONENTS WITH PROBLEMS:
-            </h4>
-            
-            <div className="space-y-2">
-              {drillData.items.map((item, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center justify-between p-3 rounded-lg border transition cursor-pointer ${
-                    item.status === "down" || item.status === "warning" 
-                      ? 'border-[var(--color-crit)]/20 bg-[var(--color-crit)]/5 hover:border-[var(--color-crit)]/40' 
-                      : 'border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-accent)]/30'
-                  }`}
-                  onClick={() => {
-                    if (drillLevel < 2 && (item.type === "problem" || item.type === "component")) {
-                      setDrillLevel(drillLevel + 1);
-                      setSelectedComponent(item);
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {item.status === "down" || item.status === "warning" ? (
-                      <AlertCircle size={16} className="text-[var(--color-crit)] flex-shrink-0" />
-                    ) : (
-                      <CheckCircle size={16} className="text-[var(--color-ok)] flex-shrink-0" />
-                    )}
-                    <span className={`text-sm truncate ${
-                      item.status === "down" || item.status === "warning" ? 'text-[var(--color-crit)]' : 'text-[var(--color-text)]'
-                    }`}>
-                      {item.name}
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
+                    <span className="text-sm text-[var(--color-muted)]">Operational State</span>
+                    <span className={`text-sm font-medium ${application.status === "up" ? "text-[var(--color-ok)]" : application.status === "warning" ? "text-[var(--color-warn)]" : "text-[var(--color-crit)]"}`}>
+                      {application.status === "up" ? "Running" : application.status === "warning" ? "Degraded" : "Stopped"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {item.status && (
-                      <div className="flex items-center gap-1.5">
-                        <StatusDot state={item.status === "up" || item.status === "healthy" || item.status === "info" ? "up" : item.status === "warning" ? "warning" : "down"} size="sm" />
-                        <span className={`text-xs ${
-                          item.status === "up" || item.status === "healthy" ? "text-[var(--color-ok)]" :
-                          item.status === "warning" ? "text-[var(--color-warn)]" :
-                          item.status === "down" ? "text-[var(--color-crit)]" :
-                          "text-[var(--color-muted)]"
-                        }`}>
-                          {item.status === "up" ? "Online" : 
-                           item.status === "healthy" ? "Healthy" :
-                           item.status === "warning" ? "Warning" :
-                           item.status === "down" ? "Offline" :
-                           item.status === "info" ? "Info" :
-                           item.status}
-                        </span>
-                      </div>
-                    )}
-                    {(item.type === "problem" || item.type === "component") && drillLevel < 2 && (
-                      <button className="p-1 rounded hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)]">
-                        <ChevronRight size={16} />
-                      </button>
-                    )}
+                  <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)]">
+                    <span className="text-sm text-[var(--color-muted)]">Guest Status</span>
+                    <span className={`text-sm font-medium ${application.status === "up" ? "text-[var(--color-ok)]" : application.status === "warning" ? "text-[var(--color-warn)]" : "text-[var(--color-crit)]"}`}>
+                      {application.status === "up" ? "Up" : application.status === "warning" ? "Warning" : "Down"}
+                    </span>
                   </div>
                 </div>
-              ))}
+              </div>
+              <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-[var(--color-muted)]">CPU Usage</span>
+                      <span className="text-[var(--color-text)] font-mono">{application.cpu}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: application.cpu, background: parseInt(application.cpu) > 80 ? "var(--color-crit)" : parseInt(application.cpu) > 60 ? "var(--color-warn)" : "var(--color-ok)" }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-[var(--color-muted)]">Memory Usage</span>
+                      <span className="text-[var(--color-text)] font-mono">{application.memory}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: application.memory, background: parseInt(application.memory) > 80 ? "var(--color-crit)" : parseInt(application.memory) > 60 ? "var(--color-warn)" : "var(--color-ok)" }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-[var(--color-muted)]">Disk Usage</span>
+                      <span className="text-[var(--color-text)] font-mono">45%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: "45%", background: 45 > 80 ? "var(--color-crit)" : 45 > 60 ? "var(--color-warn)" : "var(--color-ok)" }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Components with Problems */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-[var(--color-text)] flex items-center gap-2">
+                <AlertCircle size={16} className="text-[var(--color-crit)]" />
+                COMPONENTS WITH PROBLEMS:
+              </h4>
+              <div className="space-y-2">
+                {drillData.items.map((item, index) => {
+                  const statusInfo = getStatusLabel(item.status);
+                  const isProblem = item.status === "down" || item.status === "warning";
+                  return (
+                    <div
+                      key={index}
+                      className={`flex items-center justify-between p-3 rounded-lg border transition cursor-pointer ${
+                        isProblem
+                          ? 'border-[var(--color-crit)]/20 bg-[var(--color-crit)]/5 hover:border-[var(--color-crit)]/40'
+                          : 'border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-accent)]/30'
+                      }`}
+                      onClick={() => handleProblemClick(item)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {isProblem ? (
+                          <AlertCircle size={16} className="text-[var(--color-crit)] flex-shrink-0" />
+                        ) : (
+                          <CheckCircle size={16} className="text-[var(--color-ok)] flex-shrink-0" />
+                        )}
+                        <span className={`text-sm truncate ${isProblem ? 'text-[var(--color-crit)]' : 'text-[var(--color-text)]'}`}>
+                          {item.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <StatusDot state={item.status === "up" || item.status === "healthy" || item.status === "info" ? "up" : item.status === "warning" ? "warning" : "down"} size="sm" />
+                          <span className={`text-xs font-medium`} style={{ color: statusInfo.color }}>
+                            {statusInfo.label}
+                          </span>
+                        </div>
+                        {isProblem && (
+                          <button className="p-1 rounded hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)]">
+                            <ChevronRight size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* External Link */}
+            <div className="mt-4 pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+              <span className="text-xs text-[var(--color-faint)] truncate flex-1">
+                {`observability-self-hosted.demo.solarwinds.com/Orion/APM/Summary.aspx?viewid=98#`}
+              </span>
+              <button className="p-2 rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)]">
+                <ExternalLink size={16} />
+              </button>
             </div>
           </div>
 
-          {/* External Link */}
-          <div className="mt-4 pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
-            <span className="text-xs text-[var(--color-faint)] truncate flex-1">
-              {`observability-self-hosted.demo.solarwinds.com/Orion/APM/Summary.aspx?viewid=98#`}
-            </span>
-            <button className="p-2 rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)]">
-              <ExternalLink size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t border-[var(--color-border)] bg-[var(--color-bg)] px-5">
-          <div className="flex items-center gap-4 text-xs text-[var(--color-muted)]">
-            <span>Level: {drillLevel + 1} of 3</span>
-            <span className="w-px h-4 bg-[var(--color-border)]"></span>
-            <span>Items: {drillData.items.length}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => toast.success('Exporting data...')}
-              className="px-4 py-2 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)] flex items-center gap-2"
-            >
-              <Download size={16} />
-              Export
-            </button>
-            <button
-              onClick={onClose}
-              className="px-6 py-2 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition shadow-lg shadow-[var(--color-accent)]/20"
-            >
-              Close
-            </button>
+          {/* Footer */}
+          <div className="flex items-center justify-between p-4 border-t border-[var(--color-border)] bg-[var(--color-bg)] px-5">
+            <div className="flex items-center gap-4 text-xs text-[var(--color-muted)]">
+              <span>Level: {drillLevel + 1} of 3</span>
+              <span className="w-px h-4 bg-[var(--color-border)]"></span>
+              <span>Items: {drillData.items.length}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={() => toast.success('Exporting data...')} className="px-4 py-2 text-sm border border-[var(--color-border)] rounded-lg hover:bg-[var(--color-border)]/10 transition text-[var(--color-muted)] hover:text-[var(--color-text)] flex items-center gap-2">
+                <Download size={16} />
+                Export
+              </button>
+              <button onClick={onClose} className="px-6 py-2 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition shadow-lg shadow-[var(--color-accent)]/20">
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Problem Detail Modal (sub-modal) */}
+      <ProblemDetailModal
+        isOpen={!!selectedProblem}
+        onClose={() => setSelectedProblem(null)}
+        problem={selectedProblem}
+        application={application}
+      />
+    </>
   );
 };

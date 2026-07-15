@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 import Card from "../components/common/Card";
 
 export default function AlertDetailPage({ go }) {
-  const { alerts } = useAlerts();
+  const { alerts, resolveAlertWithHost } = useAlerts(); // 👈 get resolveAlertWithHost
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(true);
   const [returnPage, setReturnPage] = useState("Active notifications");
@@ -16,7 +16,12 @@ export default function AlertDetailPage({ go }) {
     setReturnPage(returnTo);
 
     if (directData) {
-      setAlert(JSON.parse(directData));
+      // If we have direct data (from modal), it may not have an id
+      const parsed = JSON.parse(directData);
+      setAlert({
+        ...parsed,
+        id: parsed.id || Date.now(), // fallback id
+      });
       localStorage.removeItem("selectedAlertData");
       localStorage.removeItem("returnTo");
       setLoading(false);
@@ -27,7 +32,9 @@ export default function AlertDetailPage({ go }) {
     if (id) {
       const found = alerts.find(a => String(a.id) === String(id));
       if (found) {
+        // Store the full alert (with id) so we can resolve it later
         setAlert({
+          id: found.id,
           title: found.grafana_folder || found.alertname,
           status: found.state || "Triggered",
           severity: found.severity || "Critical",
@@ -39,6 +46,7 @@ export default function AlertDetailPage({ go }) {
           acknowledgedBy: "Not yet...",
           alertDefinition: found.alertname || "Alert",
           isAlert: true,
+          host: found.host, // might be needed for resolve
         });
       } else {
         toast.error("Alert not found");
@@ -58,6 +66,20 @@ export default function AlertDetailPage({ go }) {
 
   const handleAcknowledge = () => {
     toast.success("Alert acknowledged");
+  };
+
+  // ---- New: Resolve alert and update host status ----
+  const handleResolve = () => {
+    if (window.confirm("Resolve this alert and mark the host as healthy?")) {
+      if (alert.id) {
+        resolveAlertWithHost(alert.id);
+        toast.success("Alert resolved and host marked as healthy");
+        // Optionally navigate back after resolving
+        setTimeout(() => goBack(), 1000);
+      } else {
+        toast.error("Unable to resolve: alert ID missing");
+      }
+    }
   };
 
   if (loading) return <div className="text-center py-10 text-[var(--color-muted)]">Loading...</div>;
@@ -95,6 +117,13 @@ export default function AlertDetailPage({ go }) {
             className="px-4 py-2 bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition"
           >
             Acknowledge Alert
+          </button>
+          {/* 👇 NEW: Resolve Alert button */}
+          <button
+            onClick={handleResolve}
+            className="px-4 py-2 bg-[var(--color-ok)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition"
+          >
+            Resolve Alert
           </button>
           <button className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text)] rounded-lg hover:bg-[var(--color-panel-alt)] transition">
             Edit Alert Definition
