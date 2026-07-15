@@ -3,19 +3,30 @@ import { useState } from "react";
 import Card from "../../components/common/Card";
 import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
 
-// Windows Disk data (from your screenshot)
+// Helper to generate realistic disk utilization stats (in percentage)
+const generateDiskStats = () => {
+  const min = Math.round(Math.random() * 30 + 10); // 10–40
+  const avg = Math.round(Math.random() * 30 + min + 10); // min+10 to min+40
+  const max = Math.round(Math.random() * 20 + avg + 5); // avg+5 to avg+25, capped at 100
+  return { min, avg, max: Math.min(max, 100) };
+};
+
+// Windows Disk data with generated stats
 const diskDataWindows = [
-  { hostname: "ASPL_VITBLRLABPWIO2", ip: "192.168.2.113", min: "", avg: "", max: "" },
-  { hostname: "Oracle EBS Suite", ip: "192.168.2.114", min: "", avg: "", max: "" },
-  { hostname: "zbxkubecit-JMX Tomcat", ip: "192.168.2.115", min: "", avg: "", max: "" },
-  { hostname: "ASPL HO Demo proxy_192.168.4.190", ip: "192.168.4.190", min: "", avg: "", max: "" },
-  { hostname: "VITBLRUATMSSQL", ip: "192.168.2.165", min: "", avg: "", max: "" },
-  { hostname: "Mysql Server", ip: "192.168.2.111", min: "", avg: "", max: "" },
-  { hostname: "MSSQL", ip: "192.168.2.172", min: "", avg: "", max: "" },
-  { hostname: "Google URL", ip: "127.0.0.1", min: "", avg: "", max: "" },
-  { hostname: "ASPL Pulse", ip: "192.168.2.111", min: "", avg: "", max: "" },
-  { hostname: "ASPL_DESKTOP-2MS825A", ip: "192.168.2.116", min: "", avg: "", max: "" },
-];
+  { hostname: "ASPL_VITBLRLABPWIO2", ip: "192.168.2.113" },
+  { hostname: "Oracle EBS Suite", ip: "192.168.2.114" },
+  { hostname: "zbxkubecit-JMX Tomcat", ip: "192.168.2.115" },
+  { hostname: "ASPL HO Demo proxy_192.168.4.190", ip: "192.168.4.190" },
+  { hostname: "VITBLRUATMSSQL", ip: "192.168.2.165" },
+  { hostname: "Mysql Server", ip: "192.168.2.111" },
+  { hostname: "MSSQL", ip: "192.168.2.172" },
+  { hostname: "Google URL", ip: "127.0.0.1" },
+  { hostname: "ASPL Pulse", ip: "192.168.2.111" },
+  { hostname: "ASPL_DESKTOP-2MS825A", ip: "192.168.2.116" },
+].map(host => {
+  const stats = generateDiskStats();
+  return { ...host, ...stats };
+});
 
 // Generate mock problems for a host
 const generateProblemsForHost = (hostname) => {
@@ -419,9 +430,9 @@ export default function DiskUtilizationReportWindows() {
                     </span>
                   </td>
                   <td className="py-2 px-3 text-[var(--color-text)] font-mono text-xs">{row.ip}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min || "—"}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg || "—"}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max || "—"}</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min}%</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg}%</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max}%</td>
                 </tr>
               ))}
             </tbody>

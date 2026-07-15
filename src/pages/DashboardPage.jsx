@@ -1,3 +1,4 @@
+// src/pages/DashboardPage.jsx
 import { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
@@ -32,6 +33,7 @@ import FirewallRealTimeInterfaceStatus from "./dashboards/FirewallRealTimeInterf
 import FirewallRealTimeService from "./dashboards/FirewallRealTimeService";
 import FirewallHistoricalPerformance from "./dashboards/FirewallHistoricalPerformance";
 import NOCDashboard from "./dashboards/NOCDashboard";
+import BangaloreDashboard from "./dashboards/BangaloreDashboard";
 
 // ---------- Constants ----------
 const EVENT_NAMES = [
@@ -196,6 +198,7 @@ const dashboardComponents = {
   "Real-time_Firewall Service": FirewallRealTimeService,
   "Firewall_Historical Performance": FirewallHistoricalPerformance,
   "NOC Dashboard": NOCDashboard,
+  "Bangalore Dashboard": BangaloreDashboard,
 };
 
 // ---------- Main DashboardPage ----------

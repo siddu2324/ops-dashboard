@@ -1,8 +1,8 @@
+// src/constants/navigation.js
 import {
   Home,
   Activity,
   Server,
-  Radio,
   Siren,
   Bot,
   BarChart3,
@@ -13,13 +13,13 @@ import {
   Key,
   Plug,
   Bell,
-  LayoutDashboard, // new icon for Dashboards
+  LayoutDashboard,
 } from "lucide-react";
 
 export const NAV = [
   { id: "home", label: "Home", icon: Home },
   {
-    id: "dashboards", // 👈 new top‑level item
+    id: "dashboards",
     label: "Dashboards",
     icon: LayoutDashboard,
   },
@@ -27,7 +27,7 @@ export const NAV = [
     id: "monitoring",
     label: "Monitoring",
     icon: Activity,
-    children: ["Metrics", "Logs", "Traces"], // 👈 "Dashboards" removed
+    children: ["Metrics", "Logs", "Traces"],
   },
   {
     id: "infrastructure",
@@ -35,12 +35,7 @@ export const NAV = [
     icon: Server,
     children: ["Servers", "Kubernetes", "Docker", "VMware", "Cloud"],
   },
-  {
-    id: "observability",
-    label: "Observability",
-    icon: Radio,
-    children: ["Prometheus", "Loki", "Tempo", "Mimir", "Zabbix"],
-  },
+  // ---- Observability removed ----
   {
     id: "operations",
     label: "Operations",

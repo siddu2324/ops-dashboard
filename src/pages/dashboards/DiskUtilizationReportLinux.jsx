@@ -3,19 +3,30 @@ import { useState } from "react";
 import Card from "../../components/common/Card";
 import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
 
-// Linux Disk data (from your screenshot)
+// Helper to generate realistic disk utilization stats (in percentage)
+const generateDiskStats = () => {
+  const min = Math.round(Math.random() * 30 + 10); // 10–40
+  const avg = Math.round(Math.random() * 30 + min + 10); // min+10 to min+40
+  const max = Math.round(Math.random() * 20 + avg + 5); // avg+5 to avg+25, capped at 100
+  return { min, avg, max: Math.min(max, 100) };
+};
+
+// Linux Disk data with generated stats
 const diskDataLinux = [
-  { hostname: "VITBLRSRVZBC01", ip: "192.168.6.101", min: "", avg: "", max: "" },
-  { hostname: "VITBLRSRVZDB01", ip: "192.168.2.111", min: "", avg: "", max: "" },
-  { hostname: "Docker", ip: "192.168.2.73", min: "", avg: "", max: "" },
-  { hostname: "VITZBOXORACLE_192.168.2.164", ip: "192.168.2.164", min: "", avg: "", max: "" },
-  { hostname: "ASPL Pulse", ip: "192.168.2.111", min: "", avg: "", max: "" },
-  { hostname: "zbxkuibectl-JMX Tomcat", ip: "192.168.2.115", min: "", avg: "", max: "" },
-  { hostname: "Database Server", ip: "192.168.2.111", min: "", avg: "", max: "" },
-  { hostname: "vitblruat03", ip: "192.168.2.192", min: "", avg: "", max: "" },
-  { hostname: "SPLUNKTEST", ip: "192.168.4.172", min: "", avg: "", max: "" },
-  { hostname: "photon_machine", ip: "192.168.4.157", min: "", avg: "", max: "" },
-];
+  { hostname: "VITBLRSRVZBC01", ip: "192.168.6.101" },
+  { hostname: "VITBLRSRVZDB01", ip: "192.168.2.111" },
+  { hostname: "Docker", ip: "192.168.2.73" },
+  { hostname: "VITZBOXORACLE_192.168.2.164", ip: "192.168.2.164" },
+  { hostname: "ASPL Pulse", ip: "192.168.2.111" },
+  { hostname: "zbxkuibectl-JMX Tomcat", ip: "192.168.2.115" },
+  { hostname: "Database Server", ip: "192.168.2.111" },
+  { hostname: "vitblruat03", ip: "192.168.2.192" },
+  { hostname: "SPLUNKTEST", ip: "192.168.4.172" },
+  { hostname: "photon_machine", ip: "192.168.4.157" },
+].map(host => {
+  const stats = generateDiskStats();
+  return { ...host, ...stats };
+});
 
 // Generate mock problems for a host
 const generateProblemsForHost = (hostname) => {
@@ -419,9 +430,9 @@ export default function DiskUtilizationReportLinux() {
                     </span>
                   </td>
                   <td className="py-2 px-3 text-[var(--color-text)] font-mono text-xs">{row.ip}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min || "—"}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg || "—"}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max || "—"}</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min}%</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg}%</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max}%</td>
                 </tr>
               ))}
             </tbody>

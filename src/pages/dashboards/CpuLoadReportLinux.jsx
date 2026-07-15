@@ -3,21 +3,32 @@ import { useState } from "react";
 import Card from "../../components/common/Card";
 import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
 
-// Linux CPU data (from your screenshot)
-const cpuDataLinux = [
-  { hostname: "VITBLRSRVZBC01", ip: "192.168.6.101", min: "", avg: "", max: "" },
-  { hostname: "VITBLRSRVZDB01", ip: "192.168.2.111", min: "", avg: "", max: "" },
-  { hostname: "Docker", ip: "192.168.2.73", min: "", avg: "", max: "" },
-  { hostname: "VITZBOXORACLE_192.168.2.164", ip: "192.168.2.164", min: "", avg: "", max: "" },
-  { hostname: "ASPL Pulse", ip: "192.168.2.111", min: "", avg: "", max: "" },
-  { hostname: "zbxkubectl-JMX Tomcat", ip: "192.168.2.115", min: "", avg: "", max: "" },
-  { hostname: "Database Server", ip: "192.168.2.111", min: "", avg: "", max: "" },
-  { hostname: "vitblrwat03", ip: "192.168.2.192", min: "", avg: "", max: "" },
-  { hostname: "SPLUNKTEST", ip: "192.168.4.172", min: "", avg: "", max: "" },
-  { hostname: "photon_machine", ip: "192.168.4.157", min: "", avg: "", max: "" },
-];
+// Helper to generate realistic CPU stats for a host
+const generateCpuStats = () => {
+  const min = Math.round(Math.random() * 20 + 5); // 5–25
+  const avg = Math.round(Math.random() * 30 + min + 10); // min+10 to min+40
+  const max = Math.round(Math.random() * 20 + avg + 5); // avg+5 to avg+25, capped at 100
+  return { min, avg, max: Math.min(max, 100) };
+};
 
-// Generate mock problems for a host
+// Linux CPU data with generated stats
+const cpuDataLinux = [
+  { hostname: "VITBLRSRVZBC01", ip: "192.168.6.101" },
+  { hostname: "VITBLRSRVZDB01", ip: "192.168.2.111" },
+  { hostname: "Docker", ip: "192.168.2.73" },
+  { hostname: "VITZBOXORACLE_192.168.2.164", ip: "192.168.2.164" },
+  { hostname: "ASPL Pulse", ip: "192.168.2.111" },
+  { hostname: "zbxkubectl-JMX Tomcat", ip: "192.168.2.115" },
+  { hostname: "Database Server", ip: "192.168.2.111" },
+  { hostname: "vitblrwat03", ip: "192.168.2.192" },
+  { hostname: "SPLUNKTEST", ip: "192.168.4.172" },
+  { hostname: "photon_machine", ip: "192.168.4.157" },
+].map(host => {
+  const stats = generateCpuStats();
+  return { ...host, ...stats };
+});
+
+// Generate mock problems for a host (unchanged)
 const generateProblemsForHost = (hostname) => {
   const problemTemplates = [
     { 
@@ -419,9 +430,9 @@ export default function CpuLoadReportLinux() {
                     </span>
                   </td>
                   <td className="py-2 px-3 text-[var(--color-text)] font-mono text-xs">{row.ip}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min || "—"}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg || "—"}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max || "—"}</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min}%</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg}%</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max}%</td>
                 </tr>
               ))}
             </tbody>

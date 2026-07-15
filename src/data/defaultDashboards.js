@@ -1,8 +1,7 @@
-// src/data/defaultDashboards.js
-export const CURRENT_VERSION = 9; // increment version
+export const CURRENT_VERSION = 11; // increment
 
 export const defaultDashboards = [
-  { id: 1, name: "Main Dashboard", description: "Default dashboard", createdAt: new Date().toISOString() },
+  // { id: 1, name: "Main Dashboard", description: "Default dashboard", createdAt: new Date().toISOString() }, // removed
   { id: 2, name: "Top 10 Memory Utilization Report - Windows", description: "", createdAt: new Date().toISOString() },
   { id: 3, name: "Top 10 CPU Load Report - Windows", description: "", createdAt: new Date().toISOString() },
   { id: 4, name: "Top 10 CPU Load Report - Linux", description: "", createdAt: new Date().toISOString() },

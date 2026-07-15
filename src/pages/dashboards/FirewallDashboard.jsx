@@ -2,8 +2,9 @@
 import { useState } from "react";
 import Card from "../../components/common/Card";
 import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
+import { toast } from "react-hot-toast";
 
-// Mock stats
+// ---- Mock stats ----
 const hostAvailability = {
   available: 0,
   notAvailable: 1,
@@ -26,7 +27,7 @@ const severityCounts = {
   "Not classified": 0,
 };
 
-// Base problems data (will be extended with detail)
+// ---- Base problems data ----
 const baseProblemsData = [
   {
     id: 1,
@@ -78,7 +79,7 @@ const baseProblemsData = [
   },
 ];
 
-// Generate mock detail for each problem
+// ---- Generate detail for each problem ----
 const generateProblemDetail = (problem, hostname) => {
   const detailMap = {
     "Unavailable by ICMP ping": {
@@ -131,7 +132,6 @@ const generateProblemDetail = (problem, hostname) => {
     }
   };
 
-  // Find matching detail or return a generic one
   let detail = null;
   for (const [key, value] of Object.entries(detailMap)) {
     if (problem.problem.includes(key)) {
@@ -248,9 +248,209 @@ const ProblemDetailModal = ({ isOpen, onClose, problem }) => {
   );
 };
 
-// ---- Main Component ----
+// ---- Update Problem Modal ----
+const UpdateProblemModal = ({ isOpen, onClose, problem, onUpdate }) => {
+  const [severity, setSeverity] = useState("Not classified");
+  const [suppress, setSuppress] = useState("Indefinitely");
+  const [unsuppress, setUnsuppress] = useState("Indefinitely");
+  const [acknowledge, setAcknowledge] = useState("Indefinitely");
+  const [convertToCause, setConvertToCause] = useState("Indefinitely");
+  const [closeProblem, setCloseProblem] = useState("Indefinitely");
+  const [message, setMessage] = useState("");
+  const [scope, setScope] = useState("selected");
+
+  if (!isOpen || !problem) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const hasAction = severity !== "Not classified" ||
+                      suppress !== "Indefinitely" ||
+                      unsuppress !== "Indefinitely" ||
+                      acknowledge !== "Indefinitely" ||
+                      convertToCause !== "Indefinitely" ||
+                      closeProblem !== "Indefinitely" ||
+                      message.trim() !== "";
+    if (!hasAction) {
+      toast.error("At least one update operation or message must exist.");
+      return;
+    }
+    onUpdate({
+      problemId: problem.id,
+      severity,
+      suppress,
+      unsuppress,
+      acknowledge,
+      convertToCause,
+      closeProblem,
+      message,
+      scope,
+    });
+    toast.success("Problem updated successfully!");
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+      <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+        <div className="flex items-center justify-between p-6 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+          <h3 className="text-xl font-bold text-[var(--color-text)]">Update problem</h3>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 rounded-xl hover:bg-[var(--color-border)]/10 transition flex items-center justify-center text-[var(--color-muted)] hover:text-[var(--color-text)]"
+          >
+            <X size={22} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)] space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-muted)]">Problem</label>
+            <div className="mt-1 text-sm text-[var(--color-text)] font-mono bg-[var(--color-bg)] p-2 rounded border border-[var(--color-border)]">
+              {problem.problem}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-muted)]">Message</label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              rows="2"
+              placeholder="Optional message"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-muted)]">History</label>
+            <div className="mt-1 text-xs text-[var(--color-faint)] bg-[var(--color-bg)] p-2 rounded border border-[var(--color-border)]">
+              <div>Time: {problem.time}</div>
+              <div>User: admin</div>
+              <div>User action: —</div>
+              <div>Message: —</div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-muted)]">Scope</label>
+            <select
+              value={scope}
+              onChange={(e) => setScope(e.target.value)}
+              className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+            >
+              <option value="selected">Only selected problem</option>
+              <option value="related">Selected and all other problems of related triggers 1 event</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-muted)]">Change severity</label>
+            <select
+              value={severity}
+              onChange={(e) => setSeverity(e.target.value)}
+              className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+            >
+              <option value="Not classified">Not classified</option>
+              <option value="Information">Information</option>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-muted)]">Suppress</label>
+              <select
+                value={suppress}
+                onChange={(e) => setSuppress(e.target.value)}
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              >
+                <option value="Indefinitely">Indefinitely</option>
+                <option value="Until">Until</option>
+                <option value="now+1d">now+1d</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-muted)]">Unsuppress</label>
+              <select
+                value={unsuppress}
+                onChange={(e) => setUnsuppress(e.target.value)}
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              >
+                <option value="Indefinitely">Indefinitely</option>
+                <option value="Until">Until</option>
+                <option value="now+1d">now+1d</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-muted)]">Acknowledge</label>
+              <select
+                value={acknowledge}
+                onChange={(e) => setAcknowledge(e.target.value)}
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              >
+                <option value="Indefinitely">Indefinitely</option>
+                <option value="Until">Until</option>
+                <option value="now+1d">now+1d</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--color-muted)]">Convert to cause</label>
+              <select
+                value={convertToCause}
+                onChange={(e) => setConvertToCause(e.target.value)}
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              >
+                <option value="Indefinitely">Indefinitely</option>
+                <option value="Until">Until</option>
+                <option value="now+1d">now+1d</option>
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-[var(--color-muted)]">Close problem</label>
+              <select
+                value={closeProblem}
+                onChange={(e) => setCloseProblem(e.target.value)}
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
+              >
+                <option value="Indefinitely">Indefinitely</option>
+                <option value="Until">Until</option>
+                <option value="now+1d">now+1d</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="text-xs text-[var(--color-muted)] italic">
+            At least one update operation or message must exist.
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-[var(--color-border)]">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-text)]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2 text-sm bg-[var(--color-accent)] text-[#06222A] font-semibold rounded-lg hover:opacity-90 transition shadow-lg shadow-[var(--color-accent)]/20"
+            >
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ---- Main FirewallDashboard ----
 export default function FirewallDashboard({ go }) {
   const [selectedProblem, setSelectedProblem] = useState(null);
+  const [updateProblem, setUpdateProblem] = useState(null);
 
   const severityColors = {
     Critical: "bg-[var(--color-crit)] text-white",
@@ -269,7 +469,6 @@ export default function FirewallDashboard({ go }) {
   };
 
   const handleRowClick = (problem) => {
-    // Add detail if not already present
     if (!problem.detail) {
       const enriched = generateProblemDetail(problem, problem.host);
       setSelectedProblem(enriched);
@@ -280,6 +479,18 @@ export default function FirewallDashboard({ go }) {
 
   const closeDetail = () => {
     setSelectedProblem(null);
+  };
+
+  const handleUpdateClick = (problem) => {
+    setUpdateProblem(problem);
+  };
+
+  const closeUpdate = () => {
+    setUpdateProblem(null);
+  };
+
+  const handleUpdateSubmit = (data) => {
+    console.log("Update data:", data);
   };
 
   return (
@@ -372,7 +583,7 @@ export default function FirewallDashboard({ go }) {
           </Card>
         </div>
 
-        {/* Main content – Problems table with clickable rows */}
+        {/* Right content – Problems table */}
         <div className="lg:col-span-3">
           <Card title="Problems">
             <div className="overflow-x-auto">
@@ -394,8 +605,7 @@ export default function FirewallDashboard({ go }) {
                   {baseProblemsData.map((row) => (
                     <tr
                       key={row.id}
-                      onClick={() => handleRowClick(row)}
-                      className="border-b border-[var(--color-border)] hover:bg-[var(--color-border)]/10 transition cursor-pointer group"
+                      className="border-b border-[var(--color-border)] hover:bg-[var(--color-border)]/10 transition group"
                     >
                       <td className="py-2 px-3 text-[var(--color-text)] text-xs">{row.time}</td>
                       <td className="py-2 px-3 text-[var(--color-faint)] text-xs">{row.recoveryTime || "—"}</td>
@@ -409,10 +619,18 @@ export default function FirewallDashboard({ go }) {
                       <td className="py-2 px-3 text-[var(--color-text)]">{row.problem}</td>
                       <td className="py-2 px-3 text-[var(--color-faint)] text-xs">{row.duration}</td>
                       <td className="py-2 px-3">
-                        <button className="text-xs text-[var(--color-accent)] hover:underline">{row.update}</button>
+                        <button
+                          onClick={() => handleUpdateClick(row)}
+                          className="text-xs text-[var(--color-accent)] hover:underline"
+                        >
+                          {row.update}
+                        </button>
                       </td>
                       <td className="py-2 px-3">
-                        <button className="text-xs text-[var(--color-accent)] hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                        <button
+                          onClick={() => handleRowClick(row)}
+                          className="text-xs text-[var(--color-accent)] hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition"
+                        >
                           <ChevronRight size={12} />
                           Details
                         </button>
@@ -431,6 +649,14 @@ export default function FirewallDashboard({ go }) {
         isOpen={!!selectedProblem}
         onClose={closeDetail}
         problem={selectedProblem}
+      />
+
+      {/* Update Modal */}
+      <UpdateProblemModal
+        isOpen={!!updateProblem}
+        onClose={closeUpdate}
+        problem={updateProblem}
+        onUpdate={handleUpdateSubmit}
       />
     </div>
   );

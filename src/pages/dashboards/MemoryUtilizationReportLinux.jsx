@@ -3,19 +3,30 @@ import { useState } from "react";
 import Card from "../../components/common/Card";
 import { X, Clock, AlertCircle, ChevronRight } from "lucide-react";
 
-// Host data
+// Helper to generate realistic memory utilization stats (in percentage)
+const generateMemoryStats = () => {
+  const min = Math.round(Math.random() * 30 + 15); // 15–45
+  const avg = Math.round(Math.random() * 30 + min + 10); // min+10 to min+40
+  const max = Math.round(Math.random() * 20 + avg + 5); // avg+5 to avg+25, capped at 100
+  return { min, avg, max: Math.min(max, 100) };
+};
+
+// Memory data with generated stats
 const memoryDataLinux = [
-  { ip: "192.168.6.101", hostname: "VITBLRSRVZBVXC01", min: "", avg: "", max: "" },
-  { ip: "192.168.2.111", hostname: "VITBLRSRVZDB01", min: "", avg: "", max: "" },
-  { ip: "192.168.2.73", hostname: "Docker", min: "", avg: "", max: "" },
-  { ip: "192.168.2.164", hostname: "VITZBOXORACLE_192.168.2.164", min: "", avg: "", max: "" },
-  { ip: "192.168.2.111", hostname: "ASPL_Pulse", min: "", avg: "", max: "" },
-  { ip: "192.168.2.115", hostname: "zbxkuberc1-JMX Tomcat", min: "", avg: "", max: "" },
-  { ip: "192.168.2.111", hostname: "Database Server", min: "", avg: "", max: "" },
-  { ip: "192.168.2.192", hostname: "vitblruat03", min: "", avg: "", max: "" },
-  { ip: "192.168.4.172", hostname: "SPLUNKTEST", min: "", avg: "", max: "" },
-  { ip: "192.168.4.157", hostname: "photon_machine", min: "", avg: "", max: "" },
-];
+  { ip: "192.168.6.101", hostname: "VITBLRSRVZBVXC01" },
+  { ip: "192.168.2.111", hostname: "VITBLRSRVZDB01" },
+  { ip: "192.168.2.73", hostname: "Docker" },
+  { ip: "192.168.2.164", hostname: "VITZBOXORACLE_192.168.2.164" },
+  { ip: "192.168.2.111", hostname: "ASPL_Pulse" },
+  { ip: "192.168.2.115", hostname: "zbxkuberc1-JMX Tomcat" },
+  { ip: "192.168.2.111", hostname: "Database Server" },
+  { ip: "192.168.2.192", hostname: "vitblruat03" },
+  { ip: "192.168.4.172", hostname: "SPLUNKTEST" },
+  { ip: "192.168.4.157", hostname: "photon_machine" },
+].map(host => {
+  const stats = generateMemoryStats();
+  return { ...host, ...stats };
+});
 
 // Generate mock problems for a host
 const generateProblemsForHost = (hostname) => {
@@ -419,9 +430,9 @@ export default function MemoryUtilizationReportLinux() {
                       (click to view problems)
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min || "—"}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg || "—"}</td>
-                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max || "—"}</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.min}%</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.avg}%</td>
+                  <td className="py-2 px-3 text-right text-[var(--color-text)] font-mono">{row.max}%</td>
                 </tr>
               ))}
             </tbody>

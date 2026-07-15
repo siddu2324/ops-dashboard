@@ -1,3 +1,4 @@
+// src/App.jsx
 import { lazy, Suspense, useState, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
@@ -57,6 +58,7 @@ const FirewallRealTimeInterfaceStatus = lazy(() => import("./pages/dashboards/Fi
 const FirewallRealTimeService = lazy(() => import("./pages/dashboards/FirewallRealTimeService"));
 const FirewallHistoricalPerformance = lazy(() => import("./pages/dashboards/FirewallHistoricalPerformance"));
 const NOCDashboard = lazy(() => import("./pages/dashboards/NOCDashboard"));
+const BangaloreDashboard = lazy(() => import("./pages/dashboards/BangaloreDashboard"));  // ✅ added
 
 // ---- Alerting pages ----
 const AlertRulesPage = lazy(() => import("./pages/AlertRulesPage"));
@@ -225,6 +227,8 @@ const PAGES = {
   "Firewall_Historical Performance": FirewallHistoricalPerformance,
   // ---- NOC Dashboard ----
   "NOC Dashboard": NOCDashboard,
+  // ---- Bangalore Dashboard ----
+  "Bangalore Dashboard": BangaloreDashboard,   // ✅ added
 };
 
 // ---- Fallback UI ----
