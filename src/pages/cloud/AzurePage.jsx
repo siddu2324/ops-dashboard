@@ -5,11 +5,11 @@ import {
   XCircle, Cloud, Database, Network, HardDrive, Cpu, 
   Activity, Globe, Zap, Shield, Users, Clock, Download,
   Filter, ChevronDown, ChevronRight, BarChart3, PieChart,
-  TrendingUp, TrendingDown, DollarSign, FolderOpen, 
+  TrendingUp, TrendingDown, FolderOpen, 
   LayoutDashboard, Monitor, Wifi, Box, Layers, Settings,
   User, Mail, Phone, MapPin, Building, Calendar as CalendarIcon,
   Key, Lock, ExternalLink, Edit, Trash2, MoreVertical, Eye,
-  Info, HelpCircle, Link2, Activity as ActivityIcon
+  Info, HelpCircle, Link2
 } from "lucide-react";
 import Card from "../../components/common/Card";
 import { toast } from "react-hot-toast";
@@ -22,7 +22,7 @@ const Bell = ({ size, className }) => (
   </svg>
 );
 
-// Node Details Modal Component
+// ---- Node Details Modal (unchanged) ----
 const NodeDetailsModal = ({ isOpen, onClose, nodeData }) => {
   if (!isOpen || !nodeData) return null;
 
@@ -83,20 +83,17 @@ const NodeDetailsModal = ({ isOpen, onClose, nodeData }) => {
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content - unchanged */}
         <div className="p-5 overflow-y-auto max-h-[calc(90vh-180px)] space-y-6">
-          {/* Node Status */}
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
             <div className="flex items-center gap-2">
-              <ActivityIcon size={16} className="text-[var(--color-ok)]" />
+              <Activity size={16} className="text-[var(--color-ok)]" />
               <span className="text-sm font-medium text-[var(--color-text)]">NODE STATUS</span>
               <span className="text-sm text-[var(--color-ok)]">{details.nodeStatus}</span>
             </div>
           </div>
 
-          {/* Two Column Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Node Details */}
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
               <h4 className="text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider mb-3">Node Information</h4>
               <div className="space-y-3">
@@ -127,7 +124,6 @@ const NodeDetailsModal = ({ isOpen, onClose, nodeData }) => {
               </div>
             </div>
 
-            {/* System Details */}
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
               <h4 className="text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider mb-3">System Information</h4>
               <div className="space-y-3">
@@ -155,7 +151,6 @@ const NodeDetailsModal = ({ isOpen, onClose, nodeData }) => {
             </div>
           </div>
 
-          {/* Polling Details */}
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
             <h4 className="text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider mb-3">Polling Details</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -202,7 +197,6 @@ const NodeDetailsModal = ({ isOpen, onClose, nodeData }) => {
             </div>
           </div>
 
-          {/* Port Details */}
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
             <h4 className="text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider mb-3">Port Details {details.systemName}</h4>
             <div className="overflow-x-auto">
@@ -239,7 +233,6 @@ const NodeDetailsModal = ({ isOpen, onClose, nodeData }) => {
             </div>
           </div>
 
-          {/* Availability Statistics */}
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
             <h4 className="text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider mb-3">Availability Statistics</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -279,7 +272,6 @@ const NodeDetailsModal = ({ isOpen, onClose, nodeData }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-end p-4 border-t border-[var(--color-border)] bg-[var(--color-bg)] px-5">
           <button
             onClick={() => {
@@ -302,57 +294,9 @@ const NodeDetailsModal = ({ isOpen, onClose, nodeData }) => {
   );
 };
 
-// Cost Chart Component
-const CostChart = () => {
-  const data = [
-    { name: "Storage", value: 60.93, color: "#4F46E5" },
-    { name: "Network", value: 311.93, color: "#8B5CF6" },
-    { name: "Database", value: 38.04, color: "#EC4899" },
-    { name: "Compute", value: 96.9, color: "#06B6D4" },
-  ];
+// ---- ❌ REMOVED: CostChart, NetworkCostChart, ComputeCostChart, DatabaseCostChart ----
 
-  const maxValue = Math.max(...data.map(d => d.value));
-
-  return (
-    <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Cloud Costs ($)</h4>
-        <span className="text-xs text-[var(--color-muted)]">Month To Date</span>
-      </div>
-      
-      <div className="space-y-4">
-        {data.map((item, index) => (
-          <div key={index} className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-[var(--color-muted)]">{item.name}</span>
-              <span className="text-[var(--color-text)] font-mono">${item.value.toFixed(2)}</span>
-            </div>
-            <div className="w-full h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${(item.value / maxValue) * 100}%`,
-                  backgroundColor: item.color,
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t border-[var(--color-border)]">
-        {data.map((item, index) => (
-          <div key={index} className="flex items-center gap-1.5 text-xs">
-            <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: item.color }} />
-            <span className="text-[var(--color-muted)]">{item.name}: ${item.value.toFixed(2)}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Azure Asset Topology Component - Clickable
+// ---- Azure Asset Topology Component (unchanged) ----
 const AzureTopology = ({ onNodeClick }) => {
   const events = [
     { message: "Azure Cloud VM AZUBUWEB01v in eastus2 state: Critical.", time: "Jul 14 2026 6:48PM", node: "AZUBUWEB01v" },
@@ -401,7 +345,7 @@ const AzureTopology = ({ onNodeClick }) => {
   );
 };
 
-// DNS Zones Modal Component
+// ---- DNS Zones Modal (unchanged) ----
 const DNSZonesModal = ({ isOpen, onClose, zones }) => {
   const [search, setSearch] = useState("");
   const [accountFilter, setAccountFilter] = useState("all");
@@ -425,7 +369,6 @@ const DNSZonesModal = ({ isOpen, onClose, zones }) => {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
@@ -444,7 +387,6 @@ const DNSZonesModal = ({ isOpen, onClose, zones }) => {
           </button>
         </div>
 
-        {/* Filters */}
         <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
@@ -493,7 +435,6 @@ const DNSZonesModal = ({ isOpen, onClose, zones }) => {
           </div>
         </div>
 
-        {/* Search */}
         <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-faint)]" />
@@ -507,7 +448,6 @@ const DNSZonesModal = ({ isOpen, onClose, zones }) => {
           </div>
         </div>
 
-        {/* Table */}
         <div className="p-4 overflow-y-auto max-h-[calc(90vh-280px)]">
           <table className="w-full text-sm">
             <thead>
@@ -560,7 +500,6 @@ const DNSZonesModal = ({ isOpen, onClose, zones }) => {
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-between p-4 border-t border-[var(--color-border)] bg-[var(--color-bg)] px-5">
           <span className="text-xs text-[var(--color-muted)]">
             Showing {filteredZones.length} of {zones.length} zones
@@ -577,7 +516,7 @@ const DNSZonesModal = ({ isOpen, onClose, zones }) => {
   );
 };
 
-// Cloud Accounts Modal Component
+// ---- Cloud Accounts Modal (unchanged) ----
 const CloudAccountsModal = ({ isOpen, onClose, accounts }) => {
   const [search, setSearch] = useState("");
   const [providerFilter, setProviderFilter] = useState("all");
@@ -758,47 +697,7 @@ const CloudAccountsModal = ({ isOpen, onClose, accounts }) => {
   );
 };
 
-// Network Cost Chart Component
-const NetworkCostChart = () => {
-  const data = [
-    { name: "Virtual WANs", value: 1, color: "#4F46E5" },
-    { name: "Total Network Entities", value: 19, color: "#8B5CF6" },
-    { name: "DNS Zones", value: 8, color: "#EC4899" },
-  ];
-
-  const maxValue = Math.max(...data.map(d => d.value));
-
-  return (
-    <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Network Costs ($)</h4>
-        <span className="text-xs text-[var(--color-muted)]">Month To Date • $311.93</span>
-      </div>
-      
-      <div className="space-y-4">
-        {data.map((item, index) => (
-          <div key={index} className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-[var(--color-muted)]">{item.name}</span>
-              <span className="text-[var(--color-text)] font-mono">{item.value}</span>
-            </div>
-            <div className="w-full h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${(item.value / maxValue) * 100}%`,
-                  backgroundColor: item.color,
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Storage Disk Detail Modal
+// ---- Storage Disk Detail Modal (unchanged) ----
 const StorageDiskModal = ({ isOpen, onClose, disk }) => {
   if (!isOpen || !disk) return null;
 
@@ -885,7 +784,7 @@ const StorageDiskModal = ({ isOpen, onClose, disk }) => {
   );
 };
 
-// Storage Account Detail Modal
+// ---- Storage Account Detail Modal (unchanged) ----
 const StorageAccountModal = ({ isOpen, onClose, account }) => {
   if (!isOpen || !account) return null;
 
@@ -972,55 +871,13 @@ const StorageAccountModal = ({ isOpen, onClose, account }) => {
   );
 };
 
-// Compute Cost Chart Component
-const ComputeCostChart = () => {
-  const data = [
-    { name: "Virtual Machines", value: 9, color: "#4F46E5" },
-    { name: "App Services", value: 4, color: "#8B5CF6" },
-    { name: "AKS Clusters", value: 1, color: "#EC4899" },
-    { name: "Function Apps", value: 1, color: "#06B6D4" },
-  ];
-
-  const maxValue = Math.max(...data.map(d => d.value));
-
-  return (
-    <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Compute Costs ($)</h4>
-        <span className="text-xs text-[var(--color-muted)]">Month To Date • $96.9</span>
-      </div>
-      
-      <div className="space-y-4">
-        {data.map((item, index) => (
-          <div key={index} className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-[var(--color-muted)]">{item.name}</span>
-              <span className="text-[var(--color-text)] font-mono">{item.value}</span>
-            </div>
-            <div className="w-full h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${(item.value / maxValue) * 100}%`,
-                  backgroundColor: item.color,
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Database Detail Modal Component
+// ---- Database Detail Modal (unchanged) ----
 const DatabaseDetailModal = ({ isOpen, onClose, database }) => {
   if (!isOpen || !database) return null;
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
@@ -1039,7 +896,6 @@ const DatabaseDetailModal = ({ isOpen, onClose, database }) => {
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-5 overflow-y-auto max-h-[calc(90vh-180px)] space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
@@ -1082,7 +938,6 @@ const DatabaseDetailModal = ({ isOpen, onClose, database }) => {
             </div>
           </div>
 
-          {/* Performance Metrics */}
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
             <h4 className="text-xs font-semibold text-[var(--color-faint)] uppercase tracking-wider mb-3">Performance Metrics</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1106,7 +961,6 @@ const DatabaseDetailModal = ({ isOpen, onClose, database }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-end p-4 border-t border-[var(--color-border)] bg-[var(--color-bg)] px-5">
           <button
             onClick={() => {
@@ -1129,47 +983,7 @@ const DatabaseDetailModal = ({ isOpen, onClose, database }) => {
   );
 };
 
-// Database Cost Chart Component
-const DatabaseCostChart = () => {
-  const data = [
-    { name: "Azure SQL DB", value: 38.04, color: "#4F46E5" },
-    { name: "Azure Cosmos DB", value: 25.50, color: "#8B5CF6" },
-    { name: "Azure PostgreSQL", value: 15.30, color: "#EC4899" },
-    { name: "Azure MySQL", value: 10.20, color: "#06B6D4" },
-  ];
-
-  const maxValue = Math.max(...data.map(d => d.value));
-
-  return (
-    <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-[var(--color-text)]">Database Costs ($)</h4>
-        <span className="text-xs text-[var(--color-muted)]">Month To Date</span>
-      </div>
-      
-      <div className="space-y-4">
-        {data.map((item, index) => (
-          <div key={index} className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-[var(--color-muted)]">{item.name}</span>
-              <span className="text-[var(--color-text)] font-mono">${item.value.toFixed(2)}</span>
-            </div>
-            <div className="w-full h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${(item.value / maxValue) * 100}%`,
-                  backgroundColor: item.color,
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
+// ---- MAIN AZURE PAGE COMPONENT ----
 export default function AzurePage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [timeRange, setTimeRange] = useState("CurrentYear");
@@ -1200,19 +1014,16 @@ export default function AzurePage() {
     { domain: "cnlarwindcnv.com.", provider: "Azure", zoneId: "/subscriptions/e4893f33...", account: "Account 3", zoneType: "Public" },
   ];
 
-  // Mock data
+  // Stats – removed cost references, kept entity counts
   const stats = {
     triggeredAlerts: 0,
     critical: 5,
     warning: 0,
     info: 2,
-    cloudCosts: 143.23,
-    storage: 727.69,
-    network: 310,
-    computeEntities: 15,
-    databases: 4,
     storageEntities: 19,
     networkEntities: 19,
+    computeEntities: 15,
+    databases: 4,
     accounts: cloudAccounts.length,
   };
 
@@ -1289,50 +1100,63 @@ export default function AzurePage() {
   const [selectedDatabase, setSelectedDatabase] = useState(null);
   const [showDatabaseModal, setShowDatabaseModal] = useState(false);
 
+  // ✅ Updated databaseData with the new Redis Cache entry
   const databaseData = [
-    { 
-      name: "TailwindTradersRewardsDB", 
-      type: "Azure SQL DB", 
-      status: "Running", 
-      cpu: "23%", 
-      memory: "61%", 
-      storage: "3.2%", 
-      location: "East US", 
+    {
+      name: "TailwindTradersRewardsDB",
+      type: "Azure SQL DB",
+      status: "Running",
+      cpu: "23%",
+      memory: "61%",
+      storage: "3.2%",
+      location: "East US",
       resourceGroup: "RG-Prod",
       storageAllocated: "10 GB"
     },
-    { 
-      name: "oriondemolab-postgresql", 
-      type: "Azure PostgreSQL", 
-      status: "Running", 
-      cpu: "11%", 
-      memory: "57%", 
-      storage: "13.2%", 
-      location: "East US", 
+    {
+      name: "oriondemolab-postgresql",
+      type: "Azure PostgreSQL",
+      status: "Running",
+      cpu: "11%",
+      memory: "57%",
+      storage: "13.2%",
+      location: "East US",
       resourceGroup: "RG-Prod",
       storageAllocated: "50 GB"
     },
-    { 
-      name: "cosmos-west-demo", 
-      type: "Azure Cosmos DB (NoSQL API)", 
-      status: "Running", 
-      cpu: "5%", 
-      memory: "48%", 
-      storage: "8.7%", 
-      location: "West US", 
+    {
+      name: "cosmos-west-demo",
+      type: "Azure Cosmos DB (NoSQL API)",
+      status: "Running",
+      cpu: "5%",
+      memory: "48%",
+      storage: "8.7%",
+      location: "West US",
       resourceGroup: "RG-Cosmos",
       storageAllocated: "25 GB"
     },
-    { 
-      name: "ApiDB", 
-      type: "Azure SQL DB", 
-      status: "Warning", 
-      cpu: "8%", 
-      memory: "42%", 
-      storage: "1.2%", 
-      location: "East US", 
+    {
+      name: "ApiDB",
+      type: "Azure SQL DB",
+      status: "Warning",
+      cpu: "8%",
+      memory: "42%",
+      storage: "1.2%",
+      location: "East US",
       resourceGroup: "RG-API",
       storageAllocated: "5 GB"
+    },
+    // ✅ NEW: 5th database – Redis Cache
+    {
+      name: "redis-cache-prod",
+      type: "Azure Cache for Redis",
+      status: "Running",
+      cpu: "15%",
+      memory: "72%",
+      storage: "6.8%",
+      location: "East US",
+      resourceGroup: "RG-Cache",
+      storageAllocated: "15 GB"
     },
   ];
 
@@ -1341,6 +1165,7 @@ export default function AzurePage() {
     setShowDatabaseModal(true);
   };
 
+  // ---- Render tab content (removed all CostChart references) ----
   const renderTabContent = () => {
     switch(activeTab) {
       case "overview":
@@ -1362,19 +1187,7 @@ export default function AzurePage() {
                 </div>
               </div>
 
-              <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-[var(--color-faint)] uppercase tracking-wider">CLOUD COSTS ($)</p>
-                    <p className="text-2xl font-bold text-[var(--color-text)] mt-1">{stats.cloudCosts}</p>
-                  </div>
-                  <DollarSign size={24} className="text-[var(--color-muted)]" />
-                </div>
-                <div className="flex gap-3 mt-2 text-xs">
-                  <span className="text-[var(--color-muted)]">Storage: {stats.storage}</span>
-                  <span className="text-[var(--color-muted)]">Network: {stats.network}</span>
-                </div>
-              </div>
+              {/* ❌ REMOVED: Cloud Costs card */}
 
               <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4">
                 <div className="flex items-center justify-between">
@@ -1456,9 +1269,7 @@ export default function AzurePage() {
               <div className="lg:col-span-2">
                 <AzureTopology onNodeClick={handleNodeClick} />
               </div>
-              <div className="lg:col-span-1">
-                <CostChart />
-              </div>
+              {/* ❌ REMOVED: CostChart (was in lg:col-span-1) */}
             </div>
           </div>
         );
@@ -1560,10 +1371,9 @@ export default function AzurePage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-1">
-                <NetworkCostChart />
-              </div>
-              <div className="lg:col-span-2">
+              {/* ❌ REMOVED: NetworkCostChart */}
+
+              <div className="lg:col-span-3">
                 <Card>
                   <div className="p-4">
                     <h4 className="text-sm font-semibold text-[var(--color-text)] mb-4">Network Resources Overview</h4>
@@ -1637,16 +1447,7 @@ export default function AzurePage() {
                   <FolderOpen size={24} className="text-[var(--color-muted)]" />
                 </div>
               </div>
-              <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-[var(--color-faint)] uppercase tracking-wider">Storage Costs ($)</p>
-                    <p className="text-2xl font-bold text-[var(--color-text)] mt-1">60.93</p>
-                  </div>
-                  <DollarSign size={24} className="text-[var(--color-muted)]" />
-                </div>
-                <span className="text-xs text-[var(--color-muted)]">Month To Date</span>
-              </div>
+              {/* ❌ REMOVED: Storage Costs ($) card */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1816,10 +1617,9 @@ export default function AzurePage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-1">
-                <ComputeCostChart />
-              </div>
-              <div className="lg:col-span-2">
+              {/* ❌ REMOVED: ComputeCostChart */}
+
+              <div className="lg:col-span-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg overflow-hidden">
                     <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
@@ -1949,16 +1749,7 @@ export default function AzurePage() {
                 </div>
                 <span className="text-xs text-[var(--color-muted)]">GB</span>
               </div>
-              <div className="bg-[var(--color-panel)] border border-[var(--color-border)] rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-[var(--color-faint)] uppercase tracking-wider">Database Costs ($)</p>
-                    <p className="text-2xl font-bold text-[var(--color-text)] mt-1">38.04</p>
-                  </div>
-                  <DollarSign size={24} className="text-[var(--color-muted)]" />
-                </div>
-                <span className="text-xs text-[var(--color-muted)]">Month To Date</span>
-              </div>
+              {/* ❌ REMOVED: Database Costs ($) card */}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1972,9 +1763,6 @@ export default function AzurePage() {
                     <HardDrive size={24} className="text-[var(--color-muted)]" />
                   </div>
                   <span className="text-xs text-[var(--color-muted)]">GB</span>
-                </div>
-                <div className="mt-4">
-                  <DatabaseCostChart />
                 </div>
               </div>
               <div className="lg:col-span-2">
