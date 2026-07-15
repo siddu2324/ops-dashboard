@@ -1,4 +1,4 @@
-// src/hooks/useHostProblems.js
+// hooks/useHostProblems.js
 export const generateProblemsForHost = (hostname) => {
   const problemTemplates = [
     {
@@ -134,7 +134,10 @@ export const generateProblemsForHost = (hostname) => {
       }
     }
   ];
-  const count = Math.floor(Math.random() * 3) + 1;
+  
+  // Reduce randomness: always return exactly 1 or 2 problems, not random count
+  // Also, avoid generating problems for every host call
+  const count = Math.floor(Math.random() * 2) + 1; // 1 or 2
   const shuffled = [...problemTemplates].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count).map((p, idx) => ({
     id: idx,

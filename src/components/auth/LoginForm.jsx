@@ -99,11 +99,11 @@ export default function LoginForm() {
           )}
         </button>
 
-        <div className="text-center text-xs text-[var(--color-muted)] mt-2">
+        {/* <div className="text-center text-xs text-[var(--color-muted)] mt-2">
           <p>Demo credentials:</p>
           <p>Admin: admin / admin123</p>
           <p>User: user / user123</p>
-        </div>
+        </div> */}
       </form>
     </div>
   );
