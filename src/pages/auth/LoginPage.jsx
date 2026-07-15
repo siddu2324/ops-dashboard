@@ -58,11 +58,13 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] p-4">
       {/* Login Card */}
       <div className="w-[380px] bg-[var(--color-panel)] rounded-xl border border-[var(--color-border)] shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="px-8 pt-8 pb-6 border-b border-[var(--color-border)]">
-          <h2 className="text-2xl font-bold text-[var(--color-text)] text-center">
-            AiOps360
-          </h2>
+        {/* Header with Logo */}
+        <div className="px-8 pt-8 pb-6 border-b border-[var(--color-border)] flex justify-center">
+          <img
+            src="/logo.png"
+            alt="AiOps360 Logo"
+            className="h-12 w-auto"
+          />
         </div>
 
         {/* Form */}
