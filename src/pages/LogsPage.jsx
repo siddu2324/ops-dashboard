@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   ChevronDown,
@@ -21,70 +21,12 @@ import {
 } from "recharts";
 import { toast } from "react-hot-toast";
 import TimePicker from "../components/common/TimePicker";
+import { useAlerts } from "../context/AlertContext";
+import { generateLogsFromAlerts } from "../utils/dataGenerator";
 
-// ---------- Mock Data with Labels ----------
-const generateLogs = (count = 150) => {
-  const levels = ["unknown", "debug", "info", "warn", "error"];
-  const systemMessages = [
-    "Plugin 'gdp' initialized.",
-    "Plugin 'deployPkg' initialized.",
-    "Plugin 'componentMgr' initialized.",
-    "Plugin 'appInfo' initialized.",
-    "Plugin 'vix' initialized.",
-    "QueryVGAuthConfig: vgauth usage is: 1",
-    "Plugin 'hgfsServer' initialized.",
-    "Core dump limit set to unlimited.",
-  ];
-  const windowsMessages = [
-    "Exporting failed. Will retry the request after interval.",
-    "Failed to download metadata for repo 'o19_developer'",
-    "raise dnf.exceptions.RepoError(str(e))",
-    "File '/usr/lib/python3.9/site-packages/dnf/repo.py', line 581, in load",
-    "repo.load()",
-    "File '/usr/lib/python3.9/site-packages/dnf/base.py', line 142, in _add_repc",
-    "self._add_repo_to_sack(r)",
-    "CRITICAL Error: Failed to download metadata for repc",
-    "ERROR dnf.exceptions.RepoError: Failed to download metadata for repo 'o19_developer'",
-    "UNK raise dnf.exceptions.RepoError(str(e))",
-    "UNK File '/usr/lib/python3.9/site-packages/dnf/repo.py', line 581, in load",
-    "UNK repo.load()",
-    "UNK File '/usr/lib/python3.9/site-packages/dnf/base.py', line 142, in _add_repc",
-    "UNK self._add_repo_to_sack(r)",
-  ];
-  const services = ["frontend", "backend", "api", "db", "cache", "worker"];
-  const hosts = ["httpserver", "server-01", "server-02", "server-03", "server-04"];
-  const environments = ["production", "staging", "development"];
-  const jobs = ["prometheus", "loki", "tempo", "grafana"];
-  const filenames = ["app.log", "system.log", "error.log", "access.log"];
-  const serviceNamespaces = ["default", "monitoring", "observability"];
-
-  const now = Date.now();
-  return Array.from({ length: count }, (_, i) => {
-    const time = new Date(now - Math.random() * 86400000);
-    const isSystem = Math.random() > 0.4;
-    const level = levels[Math.floor(Math.random() * levels.length)];
-    const msgPool = isSystem ? systemMessages : windowsMessages;
-    const message = msgPool[Math.floor(Math.random() * msgPool.length)];
-    return {
-      id: i,
-      timestamp: time.toISOString().replace("T", " ").slice(0, 19),
-      level: isSystem ? level : (message.includes("CRITICAL") ? "error" : level),
-      message,
-      source: isSystem ? "system" : "windows",
-      service: services[Math.floor(Math.random() * services.length)],
-      host: hosts[Math.floor(Math.random() * hosts.length)],
-      deployment_environment: environments[Math.floor(Math.random() * environments.length)],
-      job: jobs[Math.floor(Math.random() * jobs.length)],
-      filename: filenames[Math.floor(Math.random() * filenames.length)],
-      host_name: hosts[Math.floor(Math.random() * hosts.length)] + "-" + Math.floor(Math.random() * 100),
-      service_namespace: serviceNamespaces[Math.floor(Math.random() * serviceNamespaces.length)],
-    };
-  }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-};
-
-// ---------- Main Component ----------
 export default function LogsPage() {
-  const [allLogs] = useState(generateLogs(200));
+  const { alerts, serverStatuses } = useAlerts();
+  const [allLogs, setAllLogs] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSystemLogs, setShowSystemLogs] = useState(true);
   const [showWindowsLogs, setShowWindowsLogs] = useState(true);
@@ -95,15 +37,18 @@ export default function LogsPage() {
   const [selectedLabel, setSelectedLabel] = useState(null);
   const [selectedValue, setSelectedValue] = useState(null);
 
-  // Available labels
+  // Regenerate logs whenever alerts or serverStatuses change
+  useEffect(() => {
+    const generated = generateLogsFromAlerts(alerts, serverStatuses);
+    setAllLogs(generated);
+  }, [alerts, serverStatuses]);
+
+  // Available labels (derived from the logs)
   const labels = [
     "service",
-    "deployment_environment",
-    "filename",
     "host",
-    "host_name",
-    "job",
-    "service_namespace",
+    "level",
+    "source",
   ];
 
   // Get unique values for a label
@@ -117,9 +62,9 @@ export default function LogsPage() {
 
   // Filter logs
   const filteredLogs = allLogs.filter((log) => {
-    const matchesSearch = log.message.toLowerCase().includes(searchTerm.toLowerCase());
-    // Label filter: if a label is selected, require that the log has that label
-    // If a specific value is selected, require exact match
+    const matchesSearch = log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          log.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          log.host.toLowerCase().includes(searchTerm.toLowerCase());
     let matchesLabel = true;
     if (selectedLabel) {
       if (selectedValue) {
@@ -135,7 +80,7 @@ export default function LogsPage() {
   const systemLogs = filteredLogs.filter((l) => l.source === "system");
   const windowsLogs = filteredLogs.filter((l) => l.source === "windows");
   const errorLogs = filteredLogs
-    .filter((l) => l.level === "error" || l.message.includes("CRITICAL") || l.message.includes("ERROR"))
+    .filter((l) => l.level === "error")
     .slice(0, 20);
 
   const getSeverityCounts = (logs) => {
@@ -335,15 +280,7 @@ export default function LogsPage() {
                     <CartesianGrid stroke="var(--color-border)" vertical={false} />
                     <XAxis dataKey="time" tick={{ fontSize: 9, fill: "var(--color-faint)" }} tickLine={false} axisLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: "var(--color-faint)" }} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        background: "var(--color-panel)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "6px",
-                        fontSize: "10px",
-                        color: "var(--color-text)",
-                      }}
-                    />
+                    <Tooltip contentStyle={{ background: "var(--color-panel)", border: "1px solid var(--color-border)", borderRadius: "6px", fontSize: "10px", color: "var(--color-text)" }} />
                     <Bar dataKey="count" fill="var(--color-accent)" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -419,15 +356,7 @@ export default function LogsPage() {
                     <CartesianGrid stroke="var(--color-border)" vertical={false} />
                     <XAxis dataKey="time" tick={{ fontSize: 9, fill: "var(--color-faint)" }} tickLine={false} axisLine={false} />
                     <YAxis tick={{ fontSize: 9, fill: "var(--color-faint)" }} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        background: "var(--color-panel)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "6px",
-                        fontSize: "10px",
-                        color: "var(--color-text)",
-                      }}
-                    />
+                    <Tooltip contentStyle={{ background: "var(--color-panel)", border: "1px solid var(--color-border)", borderRadius: "6px", fontSize: "10px", color: "var(--color-text)" }} />
                     <Bar dataKey="count" fill="var(--color-warn)" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

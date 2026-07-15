@@ -1,3 +1,4 @@
+// src/pages/TracesPage.jsx
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -21,10 +22,12 @@ import {
 } from "recharts";
 import TimePicker from "../components/common/TimePicker";
 import ComparisonView from "../components/ComparisonView";
-import TracesListView from "../components/TracesListView"; // ✅ Import the new component
+import TracesListView from "../components/TracesListView";
+import { useAlerts } from "../context/AlertContext";
+import { generateTracesFromAlerts, generateChartDataFromStatuses } from "../utils/dataGenerator";
 
-// Helper to generate random data for charts
-const generateChartData = (points = 10) => {
+// Fallback chart data generator (if util fails)
+const fallbackChartData = (points = 10) => {
   const now = Date.now();
   return Array.from({ length: points }, (_, i) => {
     const time = new Date(now - (points - i) * 6000);
@@ -35,17 +38,8 @@ const generateChartData = (points = 10) => {
   });
 };
 
-// Initial data for each metric
-const initialData = {
-  spanRate: generateChartData(),
-  errorRate: generateChartData(),
-  latency: generateChartData(),
-  serviceStructure: generateChartData(),
-  comparison: generateChartData(),
-  traces: generateChartData(),
-};
-
 export default function TracesPage() {
+  const { alerts, serverStatuses } = useAlerts();
   const [dataSource, setDataSource] = useState("grafana");
   const [filterMode, setFilterMode] = useState("root");
   const [labelValue, setLabelValue] = useState("");
@@ -56,23 +50,72 @@ export default function TracesPage() {
   const [traceId, setTraceId] = useState("");
   const [viewMode, setViewMode] = useState("single");
   const [showQueryError, setShowQueryError] = useState(true);
-  const [chartData, setChartData] = useState(initialData);
-  const [activeTab, setActiveTab] = useState("structure"); // structure, comparison, traces
+  const [activeTab, setActiveTab] = useState("structure");
+  const [traces, setTraces] = useState([]);
+  const [chartData, setChartData] = useState({
+    spanRate: fallbackChartData(),
+    errorRate: fallbackChartData(),
+    latency: fallbackChartData(),
+    serviceStructure: fallbackChartData(),
+    comparison: fallbackChartData(),
+    traces: fallbackChartData(),
+  });
 
-  // Auto-refresh every 3 seconds
+  // Update data when alerts or serverStatuses change
+  useEffect(() => {
+    if (alerts && serverStatuses) {
+      // Generate traces from alerts
+      const generatedTraces = generateTracesFromAlerts(alerts, serverStatuses);
+      setTraces(generatedTraces);
+
+      // Generate chart data for each metric
+      const spanRateData = generateChartDataFromStatuses(serverStatuses, "cpu", 20);
+      const errorRateData = generateChartDataFromStatuses(serverStatuses, "memory", 20);
+      const latencyData = generateChartDataFromStatuses(serverStatuses, "disk", 20);
+
+      // For serviceStructure, comparison, traces – we can reuse one of the above or generate differently
+      // Let's use a mix or just copy one
+      setChartData({
+        spanRate: spanRateData,
+        errorRate: errorRateData,
+        latency: latencyData,
+        serviceStructure: spanRateData, // placeholder
+        comparison: errorRateData,      // placeholder
+        traces: latencyData,            // placeholder
+      });
+    } else {
+      // Fallback to static random data if context not available
+      setChartData({
+        spanRate: fallbackChartData(),
+        errorRate: fallbackChartData(),
+        latency: fallbackChartData(),
+        serviceStructure: fallbackChartData(),
+        comparison: fallbackChartData(),
+        traces: fallbackChartData(),
+      });
+      setTraces([]);
+    }
+  }, [alerts, serverStatuses]);
+
+  // Auto-refresh every 3 seconds (but only if we have context data, re-run to update chart points)
   useEffect(() => {
     const interval = setInterval(() => {
-      setChartData({
-        spanRate: generateChartData(),
-        errorRate: generateChartData(),
-        latency: generateChartData(),
-        serviceStructure: generateChartData(),
-        comparison: generateChartData(),
-        traces: generateChartData(),
-      });
+      if (serverStatuses && Object.keys(serverStatuses).length > 0) {
+        const spanRateData = generateChartDataFromStatuses(serverStatuses, "cpu", 20);
+        const errorRateData = generateChartDataFromStatuses(serverStatuses, "memory", 20);
+        const latencyData = generateChartDataFromStatuses(serverStatuses, "disk", 20);
+        setChartData({
+          spanRate: spanRateData,
+          errorRate: errorRateData,
+          latency: latencyData,
+          serviceStructure: spanRateData,
+          comparison: errorRateData,
+          traces: latencyData,
+        });
+      }
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [serverStatuses]);
 
   const attributes = {
     favorites: ["resource.service.name", "http.method", "http.status_code"],
@@ -448,7 +491,9 @@ export default function TracesPage() {
           {activeTab === "comparison" && <ComparisonView />}
 
           {/* ✅ Traces tab now uses the TracesListView component */}
-          {activeTab === "traces" && <TracesListView />}
+          {activeTab === "traces" && (
+            <TracesListView traces={traces} />
+          )}
         </div>
       </div>
     </div>
